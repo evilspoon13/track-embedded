@@ -1,0 +1,94 @@
+#include <chrono>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+#include <unistd.h>
+
+#include <nlohmann/json.hpp>
+
+#include "shared_memory.hpp"
+#include "ws_client.hpp"
+
+static volatile sig_atomic_t running = 1;
+
+static void signal_handler(int) {
+    running = 0;
+}
+
+static std::string get_env(const char* name, const char* fallback) {
+    const char* val = std::getenv(name);
+    return val ? val : fallback;
+}
+
+static int64_t now_ms() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+int main() {
+    struct sigaction sa{};
+    sa.sa_handler = signal_handler;
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
+
+    // pull from env, fall back to defaults if not
+    std::string url = get_env("CB_URL", "ws://localhost:9002");
+    std::string device_id = get_env("CB_DEVICE_ID", "dev-001");
+    std::string device_secret = get_env("CB_DEVICE_SECRET", "");
+
+    // 20hz .. don't need crazy high update rates for telem
+    constexpr int send_interval_ms = 50;
+
+    // reader of queue
+    TelemetryQueue* queue = open_shared_queue(false);
+    if (!queue) {
+        std::perror("Failed to open shared memory queue");
+        return 1;
+    }
+
+    WsClient ws(url, device_id, device_secret);
+
+    ws.set_on_message([](const std::string& msg) {
+        printf("[config] received: %s\n", msg.c_str());
+        // todo: dispatch to config_receiver once implemented
+    });
+
+    ws.start();
+
+    std::size_t pos = queue->current_pos();
+    std::unordered_map<std::string, double> last_values;
+    int64_t last_send_time = 0;
+
+    printf("Cloud bridge started. url=%s device=%s\n", url.c_str(), device_id.c_str());
+
+    while (running) {
+        std::size_t prev = pos;
+        queue->consume(pos, [&](const TelemetryMessage& msg) {
+            std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
+            last_values[key] = msg.value;
+        });
+
+        int64_t now = now_ms();
+        if (now - last_send_time >= send_interval_ms && !last_values.empty()) {
+            nlohmann::json j;
+            j["type"] = "telemetry";
+            j["device_id"] = device_id;
+            j["ts"] = now;
+            j["signals"] = last_values;
+
+            ws.send(j.dump());
+            last_send_time = now;
+        }
+
+        if (pos == prev) {
+            usleep(1000);
+        }
+    }
+
+    printf("Cloud bridge shutting down.\n");
+    ws.stop();
+    close_shared_queue(queue, false);
+    return 0;
+}

@@ -6,6 +6,8 @@ obj/
 can-reader/can-reader
 graphics-engine/graphics-engine
 data-logger/data-logger
+cloud-bridge/cloud-bridge
+
 
 # clangd
 compile_commands.json
@@ -40,3 +42,4 @@ logs/
 # AI
 .claude/*
 CLAUDE.md
+.claude

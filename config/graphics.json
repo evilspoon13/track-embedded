@@ -16,11 +16,11 @@
             "can_id": "0x100",
             "can_id_label": "BMS Info",
             "signal": "voltage",
-            "unit": "rpm",
-            "min": 0,
-            "max": 10,
-            "caution_threshold": 6,
-            "critical_threshhold": 8
+            "unit": "pressure",
+            "min": -40,
+            "max": 60,
+            "caution_threshold": 40,
+            "critical_threshold": 50
           }
         },
         {
@@ -28,19 +28,19 @@
           "alarm": false,
           "position": {
             "x": 2,
-            "y": 2,
+            "y": 0,
             "width": 1,
-            "height": 1
+            "height": 2
           },
           "data": {
             "can_id": "0x100",
             "can_id_label": "BMS Info",
-            "signal": "temp",
-            "unit": "temperature",
+            "signal": "state_of_charge",
+            "unit": "pressure",
             "min": 0,
-            "max": 10,
-            "caution_threshold": 6,
-            "critical_threshhold": 8
+            "max": 100,
+            "caution_threshold": 30,
+            "critical_threshold": 15
           }
         }
       ]
@@ -58,14 +58,14 @@
             "height": 2
           },
           "data": {
-            "can_id": "0x100",
-            "can_id_label": "BMS Info",
+            "can_id": "0x300",
+            "can_id_label": "BMS Info 2",
             "signal": "voltage",
-            "unit": "rpm",
-            "min": 0,
-            "max": 10,
-            "caution_threshold": 6,
-            "critical_threshhold": 8
+            "unit": "pressure",
+            "min": -40,
+            "max": 60,
+            "caution_threshold": 40,
+            "critical_threshold": 50
           }
         },
         {
@@ -73,39 +73,39 @@
           "alarm": false,
           "position": {
             "x": 2,
-            "y": 2,
+            "y": 0,
             "width": 1,
-            "height": 1
+            "height": 2
           },
           "data": {
-            "can_id": "0x100",
-            "can_id_label": "BMS Info",
-            "signal": "temp",
-            "unit": "temperature",
+            "can_id": "0x300",
+            "can_id_label": "BMS Info 2",
+            "signal": "state_of_charge",
+            "unit": "pressure",
             "min": 0,
-            "max": 10,
-            "caution_threshold": 6,
-            "critical_threshhold": 8
+            "max": 100,
+            "caution_threshold": 30,
+            "critical_threshold": 15
           }
         },
         {
           "type": "gauge",
           "alarm": false,
           "position": {
-            "x": 2,
+            "x": 3,
             "y": 0,
             "width": 2,
             "height": 2
           },
           "data": {
-            "can_id": "0x100",
-            "can_id_label": "BMS Info",
+            "can_id": "0x300",
+            "can_id_label": "BMS Info 2",
             "signal": "voltage",
-            "unit": "rpm",
-            "min": 0,
-            "max": 10,
-            "caution_threshold": 6,
-            "critical_threshhold": 8
+            "unit": "pressure",
+            "min": -40,
+            "max": 60,
+            "caution_threshold": 40,
+            "critical_threshold": 50
           }
         }
       ]
