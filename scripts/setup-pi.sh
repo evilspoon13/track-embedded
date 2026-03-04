@@ -11,6 +11,10 @@ sudo apt update && sudo apt install -y \
   cmake \
   can-utils \
   libx11-dev \
+  libxrandr-dev \
+  libxinerama-dev \
+  libxcursor-dev \
+  libxi-dev \
   libzstd-dev \
   libssl-dev \
   zlib1g-dev \
