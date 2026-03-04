@@ -27,17 +27,17 @@ void WsClient::start() {
         switch (msg->type) {
             case ix::WebSocketMessageType::Open:
                 connected_ = true;
-                printf("[ws] connected to %s\n", msg->openInfo.uri.c_str());
+                printf("connected to %s\n", msg->openInfo.uri.c_str());
                 break;
 
             case ix::WebSocketMessageType::Close:
                 connected_ = false;
-                printf("[ws] disconnected: %s (code %d)\n", msg->closeInfo.reason.c_str(), msg->closeInfo.code);
+                printf("disconnected: %s (code %d)\n", msg->closeInfo.reason.c_str(), msg->closeInfo.code);
                 break;
 
             case ix::WebSocketMessageType::Error:
                 connected_ = false;
-                printf("[ws] error: %s\n", msg->errorInfo.reason.c_str());
+                printf("error: %s\n", msg->errorInfo.reason.c_str());
                 break;
 
             case ix::WebSocketMessageType::Message: {

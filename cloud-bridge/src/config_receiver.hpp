@@ -1,7 +1,17 @@
 #ifndef _CONFIG_RECEIVER_HPP
 #define _CONFIG_RECEIVER_HPP
 
-// receive end of WS connection ... parse incoming config messages, update shared mem config, signal display to reload
-// so everything works the same just with a new source of config updates
+#include <string>
+
+class ConfigReceiver {
+public:
+    ConfigReceiver(const std::string& config_path);
+    ~ConfigReceiver() = default;
+
+    void ReceiveCallback(const std::string& msg);
+
+private:
+    std::string config_path_;
+};
 
 #endif

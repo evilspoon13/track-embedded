@@ -6,7 +6,7 @@
 #include <string>
 #include <sys/stat.h>
 
-static constexpr const char* LOG_DIR = "/tmp/fsae-logs";
+static constexpr const char* LOG_DIR = "/tmp/track-logs";
 
 static std::string make_log_path() {
     auto now = std::chrono::system_clock::now();
@@ -35,6 +35,14 @@ LogWriter::~LogWriter() {
         fflush(file_);
         fclose(file_);
     }
+}
+
+bool LogWriter::is_open() const {
+    return file_ != nullptr;
+}
+
+void LogWriter::flush() {
+    if (file_) fflush(file_);
 }
 
 void LogWriter::write(uint32_t can_id, double value) {

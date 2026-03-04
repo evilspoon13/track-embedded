@@ -21,9 +21,9 @@ public:
     LogWriter(const LogWriter&) = delete;
     LogWriter& operator=(const LogWriter&) = delete;
 
-    bool is_open() const { return file_ != nullptr; }
+    bool is_open() const;
     void write(uint32_t can_id, double value);
-    void flush() { if (file_) fflush(file_); }
+    void flush();
 
 private:
     FILE* file_ = nullptr;

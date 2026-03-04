@@ -8,6 +8,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "config_receiver.hpp"
+#include "log_uploader.hpp"
 #include "shared_memory.hpp"
 #include "ws_client.hpp"
 
@@ -50,15 +52,26 @@ int main() {
 
     WsClient ws(url, device_id, device_secret);
 
-    ws.set_on_message([](const std::string& msg) {
+    ConfigReceiver config_receiver("/tmp/graphics.json");
+
+    LogUploader log_uploader("/tmp/track-logs");
+
+    log_uploader.start();
+
+    ws.set_on_message([&config_receiver](const std::string& msg) {
         printf("[config] received: %s\n", msg.c_str());
-        // todo: dispatch to config_receiver once implemented
+        config_receiver.ReceiveCallback(msg);
     });
 
     ws.start();
 
+    struct SignalValue {
+        double value;
+        bool dirty;
+    };
+
     std::size_t pos = queue->current_pos();
-    std::unordered_map<std::string, double> last_values;
+    std::unordered_map<std::string, SignalValue> signals;
     int64_t last_send_time = 0;
 
     printf("Cloud bridge started. url=%s device=%s\n", url.c_str(), device_id.c_str());
@@ -67,18 +80,28 @@ int main() {
         std::size_t prev = pos;
         queue->consume(pos, [&](const TelemetryMessage& msg) {
             std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
-            last_values[key] = msg.value;
+            signals[key] = {msg.value, true};
         });
 
         int64_t now = now_ms();
-        if (now - last_send_time >= send_interval_ms && !last_values.empty()) {
-            nlohmann::json j;
-            j["type"] = "telemetry";
-            j["device_id"] = device_id;
-            j["ts"] = now;
-            j["signals"] = last_values;
+        if (now - last_send_time >= send_interval_ms) {
+            nlohmann::json dirty_signals;
+            for (auto& [key, sv] : signals) {
+                if (sv.dirty) {
+                    dirty_signals[key] = sv.value;
+                    sv.dirty = false;
+                }
+            }
 
-            ws.send(j.dump());
+            if (!dirty_signals.empty()){
+                nlohmann::json j;
+                j["type"] = "telemetry";
+                j["device_id"] = device_id;
+                j["ts"] = now;
+                j["signals"] = dirty_signals;
+
+                ws.send(j.dump());
+            }
             last_send_time = now;
         }
 
@@ -87,8 +110,9 @@ int main() {
         }
     }
 
-    printf("Cloud bridge shutting down.\n");
+    printf("Cloud bridge shutting down\n");
     ws.stop();
+    log_uploader.stop();
     close_shared_queue(queue, false);
     return 0;
 }
