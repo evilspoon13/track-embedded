@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$SCRIPT_DIR/.."
+
 echo "=== T.R.A.C.K. Pi Setup ==="
 
 # system packages
@@ -23,32 +26,36 @@ sudo apt update && sudo apt install -y \
   libasound2-dev \
   libgl1-mesa-dev
 
-# raylib
+# raylib (build in subshell to preserve cwd)
 if [ -f /usr/local/include/raylib.h ]; then
     echo "raylib already installed, skipping."
 else
     echo "Building raylib from source..."
     RAYLIB_DIR=$(mktemp -d)
-    git clone --depth 1 https://github.com/raysan5/raylib.git "$RAYLIB_DIR"
-    mkdir -p "$RAYLIB_DIR/build" && cd "$RAYLIB_DIR/build"
-    cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
-    make -j$(nproc)
-    sudo make install
+    (
+        git clone --depth 1 https://github.com/raysan5/raylib.git "$RAYLIB_DIR"
+        mkdir -p "$RAYLIB_DIR/build" && cd "$RAYLIB_DIR/build"
+        cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr/local ..
+        make -j$(nproc)
+        sudo make install
+    )
     rm -rf "$RAYLIB_DIR"
     echo "raylib installed."
 fi
 
-# ixwebsocket
+# ixwebsocket (build in subshell to preserve cwd)
 if [ -f /usr/local/include/ixwebsocket/IXWebSocket.h ]; then
     echo "ixwebsocket already installed, skipping."
 else
     echo "Building ixwebsocket from source..."
     IX_DIR=$(mktemp -d)
-    git clone --depth 1 https://github.com/machinezone/IXWebSocket.git "$IX_DIR"
-    mkdir -p "$IX_DIR/build" && cd "$IX_DIR/build"
-    cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DUSE_TLS=1 ..
-    make -j$(nproc)
-    sudo make install
+    (
+        git clone --depth 1 https://github.com/machinezone/IXWebSocket.git "$IX_DIR"
+        mkdir -p "$IX_DIR/build" && cd "$IX_DIR/build"
+        cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DUSE_TLS=1 ..
+        make -j$(nproc)
+        sudo make install
+    )
     rm -rf "$IX_DIR"
     echo "ixwebsocket installed."
 fi
@@ -56,9 +63,6 @@ fi
 sudo ldconfig
 
 # runtime directories and config files
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$SCRIPT_DIR/.."
-
 if [ ! -f /tmp/display.dbc ] && [ -f "$ROOT/config/display.dbc" ]; then
     cp "$ROOT/config/display.dbc" /tmp/display.dbc
     echo "Copied display.dbc to /tmp"
