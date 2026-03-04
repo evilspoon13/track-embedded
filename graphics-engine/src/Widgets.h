@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include <vector>
 #include <string>
+#include "WidgetHelpers.h"
 
 // Base grid tile (your screen is divisible into these)
 static constexpr float BASE_TILE = 80.0f;

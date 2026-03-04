@@ -13,14 +13,14 @@
                         "height": 3
                     },
                     "data": {
-                        "can_id": "0x7F",
-                        "can_id_label": "Speed",
-                        "signal": "vehicle_speed",
-                        "unit": "rpm",
-                        "min": 0,
-                        "max": 100,
-                        "caution_threshold": 75,
-                        "critical_threshold": 85
+                        "can_id": "0x100",
+                        "can_id_label": "Voltage",
+                        "signal": "voltage",
+                        "unit": "pressure",
+                        "min": -40,
+                        "max": 60,
+                        "caution_threshold": 40,
+                        "critical_threshold": 50
                     }
                 },
                 {
@@ -33,34 +33,14 @@
                         "height": 3
                     },
                     "data": {
-                        "can_id": "0x80",
-                        "can_id_label": "Coolant",
-                        "signal": "coolant_temp",
-                        "unit": "temperature",
+                        "can_id": "0x100",
+                        "can_id_label": "State of Charge",
+                        "signal": "state_of_charge",
+                        "unit": "pressure",
                         "min": 0,
-                        "max": 120,
-                        "caution_threshold": 80,
-                        "critical_threshold": 100
-                    }
-                },
-                {
-                    "type": "number",
-                    "alarm" : false,
-                    "position" : {
-                        "x" : 5,
-                        "y" : 0,
-                        "width" : 1,
-                        "height" : 1
-                    },
-                    "data" : {
-                        "can_id" : "0x66",
-                        "can_id_label" : "GEAR",
-                        "signal" : "gear",
-                        "unit" : "rpm",
-                        "min" : 0,
-                        "max" : 6,
-                        "caution_threshold" : -1,
-                        "critical_threshold" : 100
+                        "max": 100,
+                        "caution_threshold": 30,
+                        "critical_threshold": 15
                     }
                 }
             ]

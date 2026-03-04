@@ -1,0 +1,114 @@
+{
+  "screens": [
+    {
+      "name": "screen 1",
+      "widgets": [
+        {
+          "type": "gauge",
+          "alarm": false,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          },
+          "data": {
+            "can_id": "0x100",
+            "can_id_label": "BMS Info",
+            "signal": "voltage",
+            "unit": "pressure",
+            "min": -40,
+            "max": 60,
+            "caution_threshold": 40,
+            "critical_threshold": 50
+          }
+        },
+        {
+          "type": "bar",
+          "alarm": false,
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          },
+          "data": {
+            "can_id": "0x100",
+            "can_id_label": "BMS Info",
+            "signal": "state_of_charge",
+            "unit": "pressure",
+            "min": 0,
+            "max": 100,
+            "caution_threshold": 30,
+            "critical_threshold": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "screen 2",
+      "widgets": [
+        {
+          "type": "gauge",
+          "alarm": false,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "data": {
+            "can_id": "0x300",
+            "can_id_label": "BMS Info 2",
+            "signal": "voltage",
+            "unit": "pressure",
+            "min": -40,
+            "max": 60,
+            "caution_threshold": 40,
+            "critical_threshold": 50
+          }
+        },
+        {
+          "type": "bar",
+          "alarm": false,
+          "position": {
+            "x": 2,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          },
+          "data": {
+            "can_id": "0x300",
+            "can_id_label": "BMS Info 2",
+            "signal": "state_of_charge",
+            "unit": "pressure",
+            "min": 0,
+            "max": 100,
+            "caution_threshold": 30,
+            "critical_threshold": 15
+          }
+        },
+        {
+          "type": "gauge",
+          "alarm": false,
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "data": {
+            "can_id": "0x300",
+            "can_id_label": "BMS Info 2",
+            "signal": "voltage",
+            "unit": "pressure",
+            "min": -40,
+            "max": 60,
+            "caution_threshold": 40,
+            "critical_threshold": 50
+          }
+        }
+      ]
+    }
+  ]
+}
