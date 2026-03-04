@@ -4,8 +4,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$SCRIPT_DIR/.."
 
-# copy dbc config if missing
-if [ ! -f /tmp/display.dbc ] && [ -f "$ROOT/config/display.dbc" ]; then
+# always sync dbc config so can-reader picks up any changes
+if [ -f "$ROOT/config/display.dbc" ]; then
     cp "$ROOT/config/display.dbc" /tmp/display.dbc
     echo "Copied display.dbc to /tmp"
 fi

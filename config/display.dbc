@@ -7,9 +7,16 @@ BS_:
 BU_:
 
 BO_ 256 BMS_1: 8 Vector__XXX
- SG_ state_of_charge : 0|16@1+ (0.1,0) [0|0] "" Vector__XXX
- SG_ voltage : 16|16@1- (0.01,-40) [0|0] "" Vector__XXX
+ SG_ state_of_charge : 0|16@1+  (0.1,0)    [0|100]   "" Vector__XXX
+ SG_ voltage         : 16|16@1- (0.01,-40)  [0|0]     "" Vector__XXX
 
 BO_ 768 BMS_2: 8 Vector__XXX
- SG_ state_of_charge : 0|16@1+ (0.1,0) [0|0] "" Vector__XXX
- SG_ voltage : 16|16@1- (0.01,-40) [0|0] "" Vector__XXX
+ SG_ state_of_charge : 0|16@1+  (0.1,0)    [0|100]   "" Vector__XXX
+ SG_ voltage         : 16|16@1- (0.01,-40)  [0|0]     "" Vector__XXX
+
+BO_ 512 Motor: 8 Vector__XXX
+ SG_ speed   : 0|16@1+  (0.1,0)   [0|100]  "" Vector__XXX
+ SG_ current : 16|16@1- (0.1,0)   [0|0]    "" Vector__XXX
+ SG_ torque  : 32|16@1+ (0.1,0)   [0|200]  "" Vector__XXX
+ SG_ power   : 48|16@1+ (0.01,0)  [0|80]   "" Vector__XXX
+

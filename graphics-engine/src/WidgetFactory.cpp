@@ -6,6 +6,12 @@ static const char* unit_to_string(DataUnit unit) {
         case DataUnit::Temperature: return "\xc2\xb0""C";  // UTF-8 °C
         case DataUnit::Pressure:    return "psi";
         case DataUnit::RPM:         return "RPM";
+        case DataUnit::Voltage:     return "V";
+        case DataUnit::Current:     return "A";
+        case DataUnit::Speed:       return "mph";
+        case DataUnit::Torque:      return "Nm";
+        case DataUnit::Power:       return "kW";
+        case DataUnit::Percent:     return "%";
         default:                    return "";
     }
 }

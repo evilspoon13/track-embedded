@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-static uint32_t parse_can_id(const std::string& s) {
+static uint32_t parse_can_id(const std::string &s) {
   return static_cast<uint32_t>(std::stoul(s, nullptr, 16));
 }
 
@@ -28,6 +28,18 @@ static DataUnit parse_data_unit(std::string_view s) {
     return DataUnit::Pressure;
   if (s == "rpm")
     return DataUnit::RPM;
+  if (s == "voltage")
+    return DataUnit::Voltage;
+  if (s == "current")
+    return DataUnit::Current;
+  if (s == "speed")
+    return DataUnit::Speed;
+  if (s == "torque")
+    return DataUnit::Torque;
+  if (s == "power")
+    return DataUnit::Power;
+  if (s == "percent")
+    return DataUnit::Percent;
   throw std::invalid_argument("unknown data unit: " + std::string(s));
 }
 

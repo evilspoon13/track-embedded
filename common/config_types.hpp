@@ -42,7 +42,7 @@ using FrameMap = std::unordered_map<uint32_t, std::vector<ChannelConfig>>;
 
 enum class WidgetType { Gauge, Bar, Number, Indicator };
 
-enum class DataUnit { Temperature, Pressure, RPM };
+enum class DataUnit { Temperature, Pressure, RPM, Voltage, Current, Speed, Torque, Power, Percent };
 
 struct PositionConfig {
     int x;
