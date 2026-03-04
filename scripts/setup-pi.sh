@@ -8,6 +8,7 @@ echo "Installing system packages..."
 sudo apt update && sudo apt install -y \
   build-essential \
   g++ \
+  git \
   cmake \
   can-utils \
   libx11-dev \
