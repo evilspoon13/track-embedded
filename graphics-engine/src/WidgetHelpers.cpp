@@ -51,17 +51,23 @@ void draw_value_with_units(const Font& font,
                            float value_fs, float units_fs, float spacing,
                            float cx, float cy,
                            Color text_color, float scale) {
-    bool hasUnits = !units.empty();
-    float yOffset = hasUnits ? (units_fs * 0.5f) : 0.0f;
+    const float gap = 6.0f * scale;
 
-    Vector2 vSz  = MeasureTextEx(font, vstr, value_fs, spacing);
-    Vector2 vPos = {cx - vSz.x * 0.5f, cy - vSz.y * 0.5f - yOffset};
-    DrawTextEx(font, vstr, vPos, value_fs, spacing, text_color);
+    Vector2 vSz = MeasureTextEx(font, vstr, value_fs, spacing);
+    bool hasUnits = !units.empty();
+
+    Vector2 uSz = {0, 0};
+    if (hasUnits)
+        uSz = MeasureTextEx(font, units.c_str(), units_fs, spacing);
+
+    float blockH = vSz.y + (hasUnits ? gap + uSz.y : 0.0f);
+    float blockTop = cy - blockH * 0.5f;
+
+    DrawTextEx(font, vstr, {cx - vSz.x * 0.5f, blockTop}, value_fs, spacing, text_color);
 
     if (hasUnits) {
-        Vector2 uSz  = MeasureTextEx(font, units.c_str(), units_fs, spacing);
-        Vector2 uPos = {cx - uSz.x * 0.5f, vPos.y + vSz.y + 4.0f * scale};
-        DrawTextEx(font, units.c_str(), uPos, units_fs, spacing,
+        float uY = blockTop + vSz.y + gap;
+        DrawTextEx(font, units.c_str(), {cx - uSz.x * 0.5f, uY}, units_fs, spacing,
                    Color{text_color.r, text_color.g, text_color.b, 190});
     }
 }

@@ -6,6 +6,7 @@
 
 #include <csignal>
 #include <cstdio>
+#include <string>
 
 static volatile sig_atomic_t reload_flag = 0;
 
@@ -25,7 +26,8 @@ int main(int argc, char *argv[]) {
   InitWindow(W, H, "FSAE Display");
   SetTargetFPS(60);
 
-  Font uiFont = LoadFontEx("assets/fonts/InterVariable.ttf", 256, 0, 0);
+  std::string fontPath = std::string(GetApplicationDirectory()) + "assets/fonts/InterVariable.ttf";
+  Font uiFont = LoadFontEx(fontPath.c_str(), 256, 0, 0);
   SetTextureFilter(uiFont.texture, TEXTURE_FILTER_BILINEAR);
 
   TelemetryQueue *queue = open_shared_queue(false);
