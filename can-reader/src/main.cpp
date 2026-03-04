@@ -15,7 +15,8 @@ static void signal_handler(int sig) {
     if (sig == SIGHUP) reload_flag = 1;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    const char* can_iface = (argc > 1) ? argv[1] : "can0";
 
     struct sigaction sa{};
     sa.sa_handler = signal_handler;
@@ -37,7 +38,7 @@ int main() {
     }
 
     CanSocket sock;
-    if( !sock.open("vcan0")) {
+    if( !sock.open(can_iface)) {
         std::perror("Failed to open CAN socket");
         close_shared_queue(queue, true);
         return 1;

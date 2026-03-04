@@ -10,7 +10,8 @@ if [ -f "$ROOT/config/display.dbc" ]; then
     echo "Copied display.dbc to /tmp"
 fi
 
-CONFIG_PATH="${1:-$ROOT/config/graphics.json}"
+CAN_IFACE="${1:-can0}"
+CONFIG_PATH="${2:-$ROOT/config/graphics.json}"
 PIDS=()
 
 cleanup() {
@@ -25,7 +26,7 @@ trap cleanup EXIT INT TERM
 
 # 1. can-reader first - it creates the shared memory queue
 echo "Starting can-reader..."
-"$ROOT/can-reader/can-reader" &
+"$ROOT/can-reader/can-reader" "$CAN_IFACE" &
 PIDS+=($!)
 sleep 0.5
 
