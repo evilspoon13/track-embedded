@@ -1,7 +1,3 @@
-CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -I../common
-LDFLAGS = -lrt -lpthread
-
 SRC_DIR = src
 OBJ_DIR = obj
 TARGET = can-reader

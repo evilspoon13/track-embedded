@@ -1,6 +1,4 @@
-CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -I../common
-LDFLAGS = -lrt -lpthread -lixwebsocket -lssl -lcrypto -lz
+LDFLAGS += -lixwebsocket -lssl -lcrypto -lz
 
 SRC_DIR = src
 OBJ_DIR = obj

@@ -1,6 +1,4 @@
-CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -I../common
-LDFLAGS = -lrt -lpthread -lraylib -lX11 -lm
+LDFLAGS += -lraylib -lX11 -lm
 
 SRC_DIR = src
 COMMON_DIR = ../common
