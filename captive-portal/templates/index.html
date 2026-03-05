@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>T.R.A.C.K.</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>T.R.A.C.K.</h1>
+        <p class="subtitle">Telemetry Rendering And Capture Kit</p>
+
+        <div class="card">
+            <div class="flex-between mb-1">
+                <h2>WiFi Status</h2>
+                <span>{{wifi_status}}</span>
+            </div>
+            <a href="/wifi" class="btn btn-primary">Connect to WiFi</a>
+        </div>
+
+        <div class="card">
+            <h2>Driver Display</h2>
+            <p class="text-sm text-dim mb-1">Configure the display layout and CAN signals locally.</p>
+            <a href="/app" class="btn btn-secondary">Configure Display</a>
+        </div>
+    </div>
+</body>
+</html>
