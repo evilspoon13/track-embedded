@@ -1,5 +1,5 @@
-#ifndef FSAE_CONFIG_TYPES_HPP
-#define FSAE_CONFIG_TYPES_HPP
+#ifndef TRACK_CONFIG_TYPES_HPP
+#define TRACK_CONFIG_TYPES_HPP
 
 #include <cstdint>
 #include <string>

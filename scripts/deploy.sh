@@ -1,0 +1,69 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$SCRIPT_DIR/.."
+
+echo "=== Deploying T.R.A.C.K. to /opt/track/ ==="
+
+# create directory structure
+sudo mkdir -p /opt/track/config
+sudo mkdir -p /opt/track/captive-portal
+sudo mkdir -p /opt/track/graphics-engine/assets
+
+# copy binaries
+echo "Copying binaries..."
+sudo cp "$ROOT/can-reader/can-reader"         /opt/track/can-reader
+sudo cp "$ROOT/data-logger/data-logger"       /opt/track/data-logger
+sudo cp "$ROOT/graphics-engine/graphics-engine" /opt/track/graphics-engine/graphics-engine
+sudo cp "$ROOT/cloud-bridge/cloud-bridge"     /opt/track/cloud-bridge
+
+# copy graphics engine assets (fonts etc)
+if [ -d "$ROOT/graphics-engine/assets" ]; then
+    sudo cp -r "$ROOT/graphics-engine/assets/"* /opt/track/graphics-engine/assets/
+fi
+
+# copy config files
+echo "Copying config..."
+sudo cp "$ROOT/config/graphics.json" /opt/track/config/graphics.json
+sudo cp "$ROOT/config/display.dbc"   /opt/track/config/display.dbc
+
+# copy captive portal
+echo "Copying captive portal..."
+sudo cp "$ROOT/captive-portal/server.py"  /opt/track/captive-portal/
+sudo cp "$ROOT/captive-portal/wifi.py"    /opt/track/captive-portal/
+sudo cp "$ROOT/captive-portal/requirements.txt" /opt/track/captive-portal/
+sudo cp -r "$ROOT/captive-portal/templates" /opt/track/captive-portal/
+sudo cp -r "$ROOT/captive-portal/static"   /opt/track/captive-portal/
+
+# copy SPA build if it exists
+if [ -d "$ROOT/captive-portal/ui" ]; then
+    sudo cp -r "$ROOT/captive-portal/ui" /opt/track/captive-portal/
+fi
+
+# set up venv at deploy target if not present
+if [ ! -d /opt/track/captive-portal/venv ]; then
+    echo "Creating captive portal venv..."
+    sudo python3 -m venv /opt/track/captive-portal/venv
+    sudo /opt/track/captive-portal/venv/bin/pip install --upgrade pip
+    sudo /opt/track/captive-portal/venv/bin/pip install -r /opt/track/captive-portal/requirements.txt
+fi
+
+# install and enable systemd services
+echo "Installing systemd services..."
+sudo cp "$ROOT/systemd/"*.service /etc/systemd/system/
+sudo systemctl daemon-reload
+
+sudo systemctl enable \
+    track-setup \
+    track-can-interface \
+    track-can-reader \
+    track-graphics \
+    track-logger \
+    track-cloud-bridge \
+    track-portal
+
+echo ""
+echo "=== Deploy complete ==="
+echo "Services enabled. They will start on next boot."
+echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-graphics track-logger track-portal"

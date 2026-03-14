@@ -1,12 +1,12 @@
-#ifndef FSAE_SHARED_MEMORY_HPP
-#define FSAE_SHARED_MEMORY_HPP
+#ifndef TRACK_SHARED_MEMORY_HPP
+#define TRACK_SHARED_MEMORY_HPP
 
 #include <cstddef>
 
 #include "broadcast_queue.hpp"
 #include "config_types.hpp"
 
-inline constexpr const char* SHM_NAME = "/fsae_telemetry";
+inline constexpr const char* SHM_NAME = "/track_telemetry";
 
 using TelemetryQueue = BroadcastQueue<TelemetryMessage, 4096>;
 

@@ -49,8 +49,7 @@ void LogWriter::write(uint32_t can_id, double value) {
     if (!file_) return;
     auto now = std::chrono::system_clock::now();
     LogEntry entry;
-    entry.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()).count();
+    entry.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
     entry.can_id = can_id;
     entry._pad   = 0;
     entry.value  = value;

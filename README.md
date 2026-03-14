@@ -32,7 +32,7 @@ Multi-process pipeline with shared memory IPC. Each process is isolated — a cr
 ## Repository Structure
 
 ```
-fsae-display/
+track-embedded/
 ├── can-reader/          # CAN frame ingestion via SocketCAN
 ├── graphics-engine/     # Real-time display rendering
 ├── data-logger/         # Telemetry logging and compression
@@ -89,7 +89,7 @@ Shared C++ headers: broadcast queue, shared memory helpers, telemetry message ty
 
 ## Deployment
 
-Services deploy to `/opt/fsae/` and are managed via systemd. Graphics and logger depend on can-reader being up first.
+Services deploy to `/opt/track/` and are managed via systemd. Graphics and logger depend on can-reader being up first.
 
 ## License
 

@@ -1,5 +1,5 @@
-#ifndef FSAE_WS_CLIENT_HPP
-#define FSAE_WS_CLIENT_HPP
+#ifndef TRACK_WS_CLIENT_HPP
+#define TRACK_WS_CLIENT_HPP
 
 #include <atomic>
 #include <functional>

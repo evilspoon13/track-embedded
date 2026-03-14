@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   auto widgets = build_widgets(display_cfg);
 
   const int W = 800, H = 480;
-  InitWindow(W, H, "FSAE Display");
+  InitWindow(W, H, "TRACK Display");
   SetTargetFPS(60);
 
   std::string fontPath = std::string(GetApplicationDirectory()) + "assets/fonts/InterVariable.ttf";

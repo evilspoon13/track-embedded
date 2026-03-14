@@ -54,7 +54,7 @@ void WsClient::start() {
     });
 
     ws_.start();
-    printf("[ws] connecting...\n");
+    printf("connecting...\n");
 }
 
 void WsClient::stop() {

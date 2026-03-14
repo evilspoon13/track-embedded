@@ -1,10 +1,9 @@
 import json
 import os
 import subprocess
-import sys
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import urlparse
+
+from flask import Flask, request, jsonify, redirect, send_from_directory, render_template
 
 import wifi
 
@@ -12,31 +11,36 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
 GRAPHICS_PATH = CONFIG_DIR / "graphics.json"
 DBC_PATH = CONFIG_DIR / "display.dbc"
-TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-STATIC_DIR = Path(__file__).resolve().parent / "static"
 UI_DIR = Path(__file__).resolve().parent / "ui"  # vite build output
 
-# paths that devices use to detect captive portals
-CAPTIVE_PORTAL_CHECKS = {
-    "/hotspot-detect.html",      # Apple
-    "/library/test/success.html",  # Apple
-    "/generate_204",             # Android
-    "/gen_204",                  # Android
-    "/connecttest.txt",          # Windows
-    "/ncsi.txt",                 # Windows
-    "/redirect",                 # Firefox
-    "/canonical.html",           # Firefox
-    "/success.txt",              # various
-}
+app = Flask(
+    __name__,
+    template_folder=str(Path(__file__).resolve().parent / "templates"),
+    static_folder=str(Path(__file__).resolve().parent / "static"),
+    static_url_path="/static",
+)
+
+# -- captive portal detection --
+
+CAPTIVE_PORTAL_CHECKS = [
+    "/hotspot-detect.html",       # Apple
+    "/library/test/success.html", # Apple
+    "/generate_204",              # Android
+    "/gen_204",                   # Android
+    "/connecttest.txt",           # Windows
+    "/ncsi.txt",                  # Windows
+    "/redirect",                  # Firefox
+    "/canonical.html",            # Firefox
+    "/success.txt",               # various
+]
+
+@app.before_request
+def captive_portal_redirect():
+    if request.path in CAPTIVE_PORTAL_CHECKS:
+        return redirect("/")
 
 
-def render_template(name, **ctx):
-    path = TEMPLATES_DIR / name
-    html = path.read_text()
-    for key, value in ctx.items():
-        html = html.replace("{{" + key + "}}", str(value))
-    return html
-
+# -- helpers --
 
 def send_sighup(service_name):
     try:
@@ -60,208 +64,118 @@ def atomic_write(path, content):
         return False
 
 
-class PortalHandler(BaseHTTPRequestHandler):
+# -- pages --
 
-    def log_message(self, fmt, *args):
-        sys.stderr.write(f"{args[0]} {args[1]} {args[2]}\n")
-
-    # helpers to avoid repeating send header code
-    def respond_html(self, html, status=200):
-        self.send_response(status)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(html.encode())))
-        self.end_headers()
-        self.wfile.write(html.encode())
-
-    def respond_json(self, data, status=200):
-        body = json.dumps(data)
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body.encode())))
-        self.end_headers()
-        self.wfile.write(body.encode())
-
-    def respond_redirect(self, location):
-        self.send_response(302)
-        self.send_header("Location", location)
-        self.end_headers()
-
-    def respond_404(self):
-        self.respond_html("<h1>404 Not Found</h1>", 404)
-
-    def read_body(self):
-        length = int(self.headers.get("Content-Length", 0))
-        return self.rfile.read(length) if length else b""
-
-    # -- GET routes --
-    # override basehttprequesthandler to route based on path
-    def do_GET(self):
-        parsed = urlparse(self.path)
-        path = parsed.path.rstrip("/") or "/"
-
-        if path in CAPTIVE_PORTAL_CHECKS:
-            self.respond_redirect("/")
-            return
-
-        routes = {
-            "/":                  self.get_index,
-            "/wifi":              self.get_wifi,
-            "/api/wifi/scan":     self.api_wifi_scan,
-            "/api/wifi/status":   self.api_wifi_status,
-            "/api/config/graphics": self.api_get_graphics,
-            "/api/config/dbc":    self.api_get_dbc,
-            "/api/graphics":      self.api_get_graphics,
-            "/api/dbc":           self.api_get_dbc,
-        }
-
-        handler = routes.get(path)
-        if handler:
-            handler()
-        elif path.startswith("/static/"):
-            self.serve_static(path)
-        elif path.startswith("/app"):
-            self.serve_spa(path)
-        else:
-            self.respond_404()
-
-    def do_POST(self):
-        path = urlparse(self.path).path.rstrip("/")
-
-        routes = {
-            "/api/wifi/connect":    self.api_wifi_connect,
-            "/api/config/graphics": self.api_set_graphics,
-            "/api/config/dbc":      self.api_set_dbc,
-            "/api/graphics":        self.api_set_graphics,
-            "/api/dbc":             self.api_set_dbc,
-        }
-
-        handler = routes.get(path)
-        if handler:
-            handler()
-        else:
-            self.respond_404()
-
-    # -- pages --
-    # read an HTML template file, substitute placeholder, return it. html files do heavy lifting
-    def get_index(self):
-        status = wifi.get_status()
-        if status["connected"]:
-            ip = wifi.get_ip() or "unknown"
-            wifi_status = f'Connected to <strong>{status["ssid"]}</strong> ({ip})'
-        else:
-            wifi_status = "Not connected"
-        self.respond_html(render_template("index.html", wifi_status=wifi_status))
-
-    def get_wifi(self):
-        self.respond_html(render_template("wifi.html"))
+@app.route("/")
+def index():
+    status = wifi.get_status()
+    if status["connected"]:
+        ip = wifi.get_ip() or "unknown"
+        wifi_status = f'Connected to <strong>{status["ssid"]}</strong> ({ip})'
+    else:
+        wifi_status = "Not connected"
+    return render_template("index.html", wifi_status=wifi_status)
 
 
-    # -- static files --
+@app.route("/wifi")
+def wifi_page():
+    return render_template("wifi.html")
 
-    def serve_static(self, path):
-        rel = path.removeprefix("/static/")
-        file_path = STATIC_DIR / rel
-        if not file_path.is_file() or not file_path.resolve().is_relative_to(STATIC_DIR):
-            self.respond_404()
-            return
-        content = file_path.read_bytes()
-        ext = file_path.suffix
-        mime = {".css": "text/css", ".js": "application/javascript",
-                ".png": "image/png", ".svg": "image/svg+xml"}.get(ext, "application/octet-stream")
-        self.send_response(200)
-        self.send_header("Content-Type", mime)
-        self.send_header("Content-Length", str(len(content)))
-        self.end_headers()
-        self.wfile.write(content)
 
-    # -- SPA (vite build output) --
+# -- SPA (vite build output) --
 
-    def serve_spa(self, path):
-        pass
-        #todo
+@app.route("/app/")
+@app.route("/app/<path:filename>")
+def serve_spa(filename=""):
+    if filename and (UI_DIR / filename).is_file():
+        return send_from_directory(UI_DIR, filename)
+    return send_from_directory(UI_DIR, "index.html")
 
-    # -- wifi API --
 
-    def api_wifi_scan(self):
-        self.respond_json(wifi.scan_networks())
+# -- wifi API --
 
-    def api_wifi_status(self):
-        self.respond_json(wifi.get_status())
+@app.route("/api/wifi/scan")
+def api_wifi_scan():
+    return jsonify(wifi.scan_networks())
 
-    def api_wifi_connect(self):
-        try:
-            data = json.loads(self.read_body())
-        except (json.JSONDecodeError, ValueError):
-            self.respond_json({"ok": False, "error": "Invalid JSON"}, 400)
-            return
-        ssid = data.get("ssid", "").strip()
-        password = data.get("password", "")
-        if not ssid:
-            self.respond_json({"ok": False, "error": "SSID required"}, 400)
-            return
-        ok, msg = wifi.connect(ssid, password)
-        self.respond_json({"ok": ok, "message": msg})
 
-    # -- config API --
+@app.route("/api/wifi/status")
+def api_wifi_status():
+    return jsonify(wifi.get_status())
 
-    def api_get_graphics(self):
-        try:
-            self.respond_json(json.loads(GRAPHICS_PATH.read_text()))
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            self.respond_json({"error": str(e)}, 500)
 
-    def api_get_dbc(self):
-        try:
-            content = DBC_PATH.read_text()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(content.encode())))
-            self.end_headers()
-            self.wfile.write(content.encode())
-        except FileNotFoundError:
-            self.respond_json({"error": "DBC file not found"}, 404)
+@app.route("/api/wifi/connect", methods=["POST"])
+def api_wifi_connect():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"ok": False, "error": "Invalid JSON"}), 400
+    ssid = data.get("ssid", "").strip()
+    password = data.get("password", "")
+    if not ssid:
+        return jsonify({"ok": False, "error": "SSID required"}), 400
+    ok, msg = wifi.connect(ssid, password)
+    return jsonify({"ok": ok, "message": msg})
 
-    def api_set_graphics(self):
-        try:
-            data = json.loads(self.read_body())
-        except (json.JSONDecodeError, ValueError):
-            self.respond_json({"ok": False, "error": "Invalid JSON"}, 400)
-            return
-        # Validate minimal structure
-        if "screens" not in data:
-            self.respond_json({"ok": False, "error": "Missing 'screens' key"}, 400)
-            return
-        if not atomic_write(GRAPHICS_PATH, json.dumps(data, indent=2)):
-            self.respond_json({"ok": False, "error": "Failed to write config"}, 500)
-            return
-        send_sighup("fsae-graphics.service")
-        self.respond_json({"ok": True})
 
-    def api_set_dbc(self):
-        body = self.read_body().decode("utf-8", errors="replace")
-        if not body.strip():
-            self.respond_json({"ok": False, "error": "Empty DBC content"}, 400)
-            return
-        if not atomic_write(DBC_PATH, body):
-            self.respond_json({"ok": False, "error": "Failed to write DBC"}, 500)
-            return
-        # also copy to /tmp so can-reader picks it up
-        atomic_write(Path("/tmp/display.dbc"), body)
-        send_sighup("fsae-can-reader.service")
-        self.respond_json({"ok": True})
+# -- config API --
 
+@app.route("/api/graphics", methods=["GET"])
+@app.route("/api/config/graphics", methods=["GET"])
+def api_get_graphics():
+    try:
+        return app.response_class(
+            GRAPHICS_PATH.read_text(),
+            mimetype="application/json",
+        )
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/graphics", methods=["POST"])
+@app.route("/api/config/graphics", methods=["POST"])
+def api_set_graphics():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"ok": False, "error": "Invalid JSON"}), 400
+    if "screens" not in data:
+        return jsonify({"ok": False, "error": "Missing 'screens' key"}), 400
+    if not atomic_write(GRAPHICS_PATH, json.dumps(data, indent=2)):
+        return jsonify({"ok": False, "error": "Failed to write config"}), 500
+    send_sighup("track-graphics.service")
+    return jsonify({"ok": True})
+
+
+@app.route("/api/dbc", methods=["GET"])
+@app.route("/api/config/dbc", methods=["GET"])
+def api_get_dbc():
+    try:
+        return app.response_class(
+            DBC_PATH.read_text(),
+            mimetype="text/plain; charset=utf-8",
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "DBC file not found"}), 404
+
+
+@app.route("/api/dbc", methods=["POST"])
+@app.route("/api/config/dbc", methods=["POST"])
+def api_set_dbc():
+    body = request.get_data(as_text=True)
+    if not body.strip():
+        return jsonify({"ok": False, "error": "Empty DBC content"}), 400
+    if not atomic_write(DBC_PATH, body):
+        return jsonify({"ok": False, "error": "Failed to write DBC"}), 500
+    atomic_write(Path("/tmp/display.dbc"), body)
+    send_sighup("track-can-reader.service")
+    return jsonify({"ok": True})
+    
+
+# -- main --
 
 def main():
     port = int(os.environ.get("PORTAL_PORT", "80"))
-    server = HTTPServer(("0.0.0.0", port), PortalHandler)
     print(f"captive portal running on http://0.0.0.0:{port}")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    server.server_close()
-    print("Portal stopped")
-
+    app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
-#ifndef FSAE_LOG_WRITER_HPP
-#define FSAE_LOG_WRITER_HPP
+#ifndef TRACK_LOG_WRITER_HPP
+#define TRACK_LOG_WRITER_HPP
 
 #include <cstdint>
 #include <cstdio>

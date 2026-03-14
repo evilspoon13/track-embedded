@@ -1,5 +1,5 @@
-#ifndef FSAE_CAN_SOCKET_HPP
-#define FSAE_CAN_SOCKET_HPP
+#ifndef TRACK_CAN_SOCKET_HPP
+#define TRACK_CAN_SOCKET_HPP
 
 #include <linux/can.h>
 #include <string>

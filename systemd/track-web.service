@@ -1,10 +1,11 @@
 [Unit]
-Description=FSAE CAN Reader
+Description=TRACK Web Config Server
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/fsae/can-reader
+WorkingDirectory=/opt/track/web-server/server
+ExecStart=/usr/bin/node index.js
 Restart=on-failure
 RestartSec=1
 

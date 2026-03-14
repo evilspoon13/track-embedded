@@ -1,5 +1,5 @@
-#ifndef FSAE_CONFIG_PARSER_HPP
-#define FSAE_CONFIG_PARSER_HPP
+#ifndef TRACK_CONFIG_PARSER_HPP
+#define TRACK_CONFIG_PARSER_HPP
 
 #include "config_types.hpp"
 

@@ -14,7 +14,7 @@
         <div class="card">
             <div class="flex-between mb-1">
                 <h2>WiFi Status</h2>
-                <span>{{wifi_status}}</span>
+                <span>{{ wifi_status | safe }}</span>
             </div>
             <a href="/wifi" class="btn btn-primary">Connect to WiFi</a>
         </div>

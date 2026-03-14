@@ -1,0 +1,15 @@
+[Unit]
+Description=TRACK Captive Portal
+After=hostapd.service track-setup.service
+Requires=track-setup.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/track/captive-portal
+ExecStart=/opt/track/captive-portal/venv/bin/python /opt/track/captive-portal/server.py
+Environment=PORTAL_PORT=80
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

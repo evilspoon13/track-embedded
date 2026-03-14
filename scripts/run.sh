@@ -45,5 +45,14 @@ echo "Starting cloud-bridge..."
 "$ROOT/cloud-bridge/cloud-bridge" &
 PIDS+=($!)
 
+# 5. captive portal - flask server for wifi + config
+echo "Starting captive portal on port 8080..."
+PORTAL_PYTHON="$ROOT/captive-portal/venv/bin/python"
+if [ ! -f "$PORTAL_PYTHON" ]; then
+    PORTAL_PYTHON=python3
+fi
+PORTAL_PORT=8080 "$PORTAL_PYTHON" "$ROOT/captive-portal/server.py" &
+PIDS+=($!)
+
 echo "All processes running. Press Ctrl+C to stop."
 wait

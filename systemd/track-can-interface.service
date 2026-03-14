@@ -1,0 +1,12 @@
+[Unit]
+Description=Bring up CAN bus interface
+After=network-pre.target
+Before=track-can-reader.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/ip link set can0 up type can bitrate 500000
+
+[Install]
+WantedBy=multi-user.target
