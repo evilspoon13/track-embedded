@@ -24,7 +24,7 @@ public:
     void stop();
     bool is_connected() const;
 
-    void send(const std::string& json);
+    bool send(const std::string& json);
     void set_on_message(MessageCallback cb);
 
 private:

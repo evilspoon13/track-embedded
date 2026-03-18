@@ -66,9 +66,9 @@ bool WsClient::is_connected() const {
     return connected_.load();
 }
 
-void WsClient::send(const std::string& json){
-    if (!connected_.load()) return;
-    ws_.send(json);
+bool WsClient::send(const std::string& json){
+    if (!connected_.load()) return false;
+    return ws_.send(json).success;
 }
 
 void WsClient::set_on_message(MessageCallback cb){

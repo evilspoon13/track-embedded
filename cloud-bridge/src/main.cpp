@@ -66,13 +66,8 @@ int main() {
 
     ws.start();
 
-    struct SignalValue {
-        double value;
-        bool dirty;
-    };
-
     std::size_t pos = queue->current_pos();
-    std::unordered_map<std::string, SignalValue> signals;
+    std::unordered_map<std::string, double> signals;
     int64_t last_send_time = 0;
     int64_t last_heartbeat_time = 0;
 
@@ -82,27 +77,21 @@ int main() {
         std::size_t prev = pos;
         queue->consume(pos, [&](const TelemetryMessage& msg) {
             std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
-            signals[key] = {msg.value, true};
+            signals[key] = msg.value;
         });
 
         int64_t now = now_ms();
         if (now - last_send_time >= send_interval_ms) {
-            nlohmann::json dirty_signals;
-            for (auto& [key, sv] : signals) {
-                if (sv.dirty) {
-                    dirty_signals[key] = sv.value;
-                    sv.dirty = false;
-                }
-            }
-
-            if (!dirty_signals.empty()){
+            if (!signals.empty()){
                 nlohmann::json j;
                 j["type"] = "telemetry";
                 j["device_id"] = device_id;
                 j["ts"] = now;
-                j["signals"] = dirty_signals;
+                j["signals"] = signals;
 
-                ws.send(j.dump());
+                if (ws.send(j.dump())) {
+                    signals.clear();
+                }
             }
             last_send_time = now;
         }
