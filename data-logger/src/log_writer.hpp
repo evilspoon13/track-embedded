@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <string>
 
 // Binary log entry layout (24 bytes):
 // | timestamp_ms (int64) | can_id (uint32) | _pad (uint32) | value (double) |
@@ -27,6 +28,7 @@ public:
 
 private:
     FILE* file_ = nullptr;
+    std::string path_;
 };
 
 #endif
