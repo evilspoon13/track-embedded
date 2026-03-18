@@ -1,5 +1,6 @@
 #include "WidgetFactory.h"
 #include <type_traits>
+#include <utility>
 
 static const char* unit_to_string(DataUnit unit) {
     switch (unit) {
@@ -23,11 +24,16 @@ static void fill_thresholds(GaugeThreshold* th, int& count, const DataConfig& d)
     th[2] = { (float)d.max,                RED    };
 }
 
-std::vector<LiveWidget> build_widgets(const DisplayConfig& config) {
-    std::vector<LiveWidget> result;
+std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
+    std::vector<LiveScreen> result;
+    result.reserve(config.screens.size());
 
-    for (const auto& screen : config.screens) {
-        for (const auto& wc : screen.widgets) {
+    for (const auto& screen_cfg : config.screens) {
+        LiveScreen screen;
+        screen.name = screen_cfg.name;
+        screen.widgets.reserve(screen_cfg.widgets.size());
+
+        for (const auto& wc : screen_cfg.widgets) {
             LiveWidget lw;
             lw.can_id = wc.data.can_id;
             lw.signal = wc.data.signal;
@@ -78,8 +84,10 @@ std::vector<LiveWidget> build_widgets(const DisplayConfig& config) {
                 }
             }
 
-            result.push_back(std::move(lw));
+            screen.widgets.push_back(std::move(lw));
         }
+
+        result.push_back(std::move(screen));
     }
 
     return result;

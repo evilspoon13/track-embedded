@@ -1,9 +1,9 @@
 #pragma once
 #include "Widgets.h"
 #include "config_types.hpp"
+#include <string>
 #include <variant>
 #include <vector>
-#include <string>
 
 struct LiveWidget {
     std::variant<NumberWidget, IndicatorLight, GaugeWidget, BarGraphWidget> widget;
@@ -14,4 +14,9 @@ struct LiveWidget {
     void draw(const Font& font) const;
 };
 
-std::vector<LiveWidget> build_widgets(const DisplayConfig& config);
+struct LiveScreen {
+    std::string name;
+    std::vector<LiveWidget> widgets;
+};
+
+std::vector<LiveScreen> build_screens(const DisplayConfig& config);
