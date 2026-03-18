@@ -42,6 +42,7 @@ int main() {
 
     // 20hz .. don't need crazy high update rates for telem
     constexpr int send_interval_ms = 50;
+    constexpr int heartbeat_interval_ms = 1000;
 
     // reader of queue
     TelemetryQueue* queue = open_shared_queue(false);
@@ -73,6 +74,7 @@ int main() {
     std::size_t pos = queue->current_pos();
     std::unordered_map<std::string, SignalValue> signals;
     int64_t last_send_time = 0;
+    int64_t last_heartbeat_time = 0;
 
     printf("Cloud bridge started. url=%s device=%s\n", url.c_str(), device_id.c_str());
 
@@ -103,6 +105,16 @@ int main() {
                 ws.send(j.dump());
             }
             last_send_time = now;
+        }
+
+        if (now - last_heartbeat_time >= heartbeat_interval_ms) {
+            nlohmann::json heartbeat;
+            heartbeat["type"] = "heartbeat";
+            heartbeat["status"] = "connected";
+            heartbeat["device_id"] = device_id;
+            heartbeat["ts"] = now;
+            ws.send(heartbeat.dump());
+            last_heartbeat_time = now;
         }
 
         if (pos == prev) {
