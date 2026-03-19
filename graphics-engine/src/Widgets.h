@@ -1,3 +1,12 @@
+/**
+ * Widgets.h            Widget Type Definitions
+ *
+ * @author      Justin Busker '26
+ * @author      Jack Williams '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #pragma once
 #include "raylib.h"
 #include <vector>

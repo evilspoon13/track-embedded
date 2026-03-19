@@ -1,3 +1,11 @@
+"""
+server.py           Captive Portal Web Server
+
+@author     Cameron Stone '26 <cameron28202@gmail.com>
+
+@copyright  Texas A&M University
+"""
+
 import json
 import os
 import subprocess

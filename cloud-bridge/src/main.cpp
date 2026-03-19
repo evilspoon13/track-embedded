@@ -1,3 +1,12 @@
+/**
+ * main.cpp             Cloud Bridge Process
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ * @author      Brayden Bailey '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include <chrono>
 #include <csignal>
 #include <cstdio>

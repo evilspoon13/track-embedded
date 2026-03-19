@@ -1,3 +1,12 @@
+/**
+ * config_parser.cpp    Display Config Parser
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "config_parser.hpp"
 #include "config_types.hpp"
 #include <fstream>

@@ -1,3 +1,13 @@
+/**
+ * main.cpp             Graphics Engine Process
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ * @author      Justin Busker '26
+ * @author      Jack Williams '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "WidgetFactory.h"
 #include "Widgets.h"
 #include "config_parser.hpp"

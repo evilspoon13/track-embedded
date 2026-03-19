@@ -1,3 +1,11 @@
+/**
+ * ws_client.cpp        WebSocket Client
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "ws_client.hpp"
 
 #include <cstdio>

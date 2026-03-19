@@ -1,3 +1,11 @@
+/**
+ * ws_client.hpp        WebSocket Client
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_WS_CLIENT_HPP
 #define TRACK_WS_CLIENT_HPP
 

@@ -1,3 +1,11 @@
+/**
+ * log_writer.cpp       Telemetry Log Writer
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "log_writer.hpp"
 
 #include <chrono>

@@ -1,3 +1,11 @@
+/**
+ * can_socket.hpp       CAN Socket Interface
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_CAN_SOCKET_HPP
 #define TRACK_CAN_SOCKET_HPP
 

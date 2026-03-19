@@ -1,3 +1,12 @@
+/**
+ * WidgetFactory.h      Widget Factory
+ *
+ * @author      Justin Busker '26
+ * @author      Jack Williams '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #pragma once
 #include "Widgets.h"
 #include "config_types.hpp"

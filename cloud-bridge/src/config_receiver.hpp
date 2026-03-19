@@ -1,3 +1,11 @@
+/**
+ * config_receiver.hpp  Config Receiver
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef _CONFIG_RECEIVER_HPP
 #define _CONFIG_RECEIVER_HPP
 

@@ -1,3 +1,12 @@
+/**
+ * WidgetFactory.cpp    Widget Factory
+ *
+ * @author      Justin Busker '26
+ * @author      Jack Williams '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "WidgetFactory.h"
 #include <type_traits>
 #include <utility>

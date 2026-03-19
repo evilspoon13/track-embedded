@@ -1,3 +1,11 @@
+/**
+ * config_receiver.cpp  Config Receiver
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "config_receiver.hpp"
 
 #include <cstdio>

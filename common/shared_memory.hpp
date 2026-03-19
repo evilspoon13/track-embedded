@@ -1,3 +1,11 @@
+/**
+ * shared_memory.hpp    Shared Memory IPC
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_SHARED_MEMORY_HPP
 #define TRACK_SHARED_MEMORY_HPP
 

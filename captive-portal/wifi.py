@@ -1,3 +1,11 @@
+"""
+wifi.py             WiFi Management Utilities
+
+@author     Cameron Stone '26 <cameron28202@gmail.com>
+
+@copyright  Texas A&M University
+"""
+
 import subprocess
 import re
 

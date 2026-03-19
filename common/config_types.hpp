@@ -1,3 +1,12 @@
+/**
+ * config_types.hpp     Config Type Definitions
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_CONFIG_TYPES_HPP
 #define TRACK_CONFIG_TYPES_HPP
 

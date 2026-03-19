@@ -1,3 +1,11 @@
+/**
+ * frame_parser.cpp     CAN Frame Parser
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "frame_parser.hpp"
 
 

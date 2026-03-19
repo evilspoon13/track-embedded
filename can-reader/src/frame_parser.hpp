@@ -1,3 +1,11 @@
+/**
+ * frame_parser.hpp     CAN Frame Parser
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_FRAME_PARSER_HPP
 #define TRACK_FRAME_PARSER_HPP
 

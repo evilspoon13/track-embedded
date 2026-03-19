@@ -1,3 +1,11 @@
+/**
+ * HorizontalBarGraphWidget.cpp  Horizontal Bar Graph Widget
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "Widgets.h"
 
 void HorizontalBarGraphWidget::Draw(const Font& font) const {

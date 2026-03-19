@@ -1,3 +1,11 @@
+/**
+ * shared_memory.cpp    Shared Memory IPC
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "shared_memory.hpp"
 #include <sys/mman.h>
 #include <fcntl.h>

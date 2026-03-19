@@ -1,3 +1,11 @@
+/**
+ * WidgetHelpers.h      Widget Helper Utilities
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #pragma once
 #include "raylib.h"
 #include <string>

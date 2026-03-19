@@ -1,3 +1,11 @@
+/**
+ * NumberWidget.cpp     Number Display Widget
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "Widgets.h"
 
 void NumberWidget::Draw(const Font &font) const {

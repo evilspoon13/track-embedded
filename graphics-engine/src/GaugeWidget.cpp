@@ -1,3 +1,11 @@
+/**
+ * GaugeWidget.cpp      Gauge Widget
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "Widgets.h"
 #include <cmath>
 
