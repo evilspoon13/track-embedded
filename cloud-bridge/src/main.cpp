@@ -19,6 +19,7 @@
 
 #include "config_receiver.hpp"
 #include "log_uploader.hpp"
+#include "telemetry_queue.hpp"
 #include "shared_memory.hpp"
 #include "ws_client.hpp"
 
@@ -54,7 +55,7 @@ int main() {
     constexpr int heartbeat_interval_ms = 1000;
 
     // reader of queue
-    TelemetryQueue* queue = open_shared_queue(false);
+    TelemetryQueue* queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
     if (!queue) {
         std::perror("Failed to open shared memory queue");
         return 1;
@@ -123,6 +124,6 @@ int main() {
     printf("Cloud bridge shutting down\n");
     ws.stop();
     log_uploader.stop();
-    close_shared_queue(queue, false);
+    close_shared_queue(queue, TELEMETRY_SHM, false);
     return 0;
 }

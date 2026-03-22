@@ -9,7 +9,7 @@
 #include <csignal>
 #include <cstdio>
 
-#include "config_types.hpp"
+#include "telemetry_queue.hpp"
 #include "dbc_parser.hpp"
 #include "shared_memory.hpp"
 #include "can_socket.hpp"
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    TelemetryQueue* queue = open_shared_queue(true);
+    TelemetryQueue* queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, true);
     if (!queue) {
         std::perror("Failed to open shared memory queue");
         return 1;
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     CanSocket sock;
     if( !sock.open(can_iface)) {
         std::perror("Failed to open CAN socket");
-        close_shared_queue(queue, true);
+        close_shared_queue(queue, TELEMETRY_SHM, true);
         return 1;
     }
 
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    close_shared_queue(queue, true);
+    close_shared_queue(queue, TELEMETRY_SHM, true);
 
     return 0;
 }

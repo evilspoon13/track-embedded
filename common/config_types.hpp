@@ -16,12 +16,6 @@
 #include <vector>
 #include <cstring>
 
-struct TelemetryMessage {
-    uint32_t can_id;
-    char signal_name[64];
-    double value;
-};
-
 // CAN frame config types
 enum class SignalType {
     UINT8,

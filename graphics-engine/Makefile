@@ -17,7 +17,7 @@ OBJ_DIR = obj
 TARGET = graphics-engine
 
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-COMMON_SRCS = $(COMMON_DIR)/config_parser.cpp $(COMMON_DIR)/shared_memory.cpp
+COMMON_SRCS = $(COMMON_DIR)/config_parser.cpp
 
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 COMMON_OBJS = $(COMMON_SRCS:$(COMMON_DIR)/%.cpp=$(OBJ_DIR)/common_%.o)

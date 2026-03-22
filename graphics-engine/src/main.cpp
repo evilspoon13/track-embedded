@@ -12,6 +12,7 @@
 #include "Widgets.h"
 #include "config_parser.hpp"
 #include "raylib.h"
+#include "telemetry_queue.hpp"
 #include "shared_memory.hpp"
 
 #include <algorithm>
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]) {
   Font uiFont = LoadFontEx(fontPath.c_str(), 256, 0, 0);
   SetTextureFilter(uiFont.texture, TEXTURE_FILTER_BILINEAR);
 
-  TelemetryQueue *queue = open_shared_queue(false);
+  TelemetryQueue *queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
   std::size_t consumer_pos = queue ? queue->current_pos() : 0;
   int queue_retry = 0;
 
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     if (!queue && ++queue_retry >= 60) {
       queue_retry = 0;
-      queue = open_shared_queue(false);
+      queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
       if (queue)
         consumer_pos = queue->current_pos();
     }
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (queue)
-    close_shared_queue(queue, false);
+    close_shared_queue(queue, TELEMETRY_SHM, false);
 
   UnloadFont(uiFont);
   CloseWindow();
