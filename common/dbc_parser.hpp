@@ -1,3 +1,11 @@
+/**
+ * dbc_parser.hpp       DBC File Parser
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_DBC_PARSER_HPP
 #define TRACK_DBC_PARSER_HPP
 

@@ -1,3 +1,11 @@
+/**
+ * WidgetHelpers.cpp    Widget Helper Utilities
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "WidgetHelpers.h"
 #include "Widgets.h"   // GaugeThreshold definition
 

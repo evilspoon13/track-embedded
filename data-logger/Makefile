@@ -5,7 +5,7 @@ OBJ_DIR = obj
 TARGET = data-logger
 
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-COMMON_SRCS = ../common/shared_memory.cpp
+COMMON_SRCS =
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o) $(COMMON_SRCS:../common/%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(TARGET)

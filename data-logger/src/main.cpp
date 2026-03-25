@@ -1,7 +1,16 @@
+/**
+ * main.cpp             Data Logger Process
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include <csignal>
 #include <cstdio>
 #include <unistd.h>
 
+#include "telemetry_queue.hpp"
 #include "shared_memory.hpp"
 #include "log_writer.hpp"
 
@@ -17,7 +26,7 @@ int main() {
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
-    TelemetryQueue* queue = open_shared_queue(false);
+    TelemetryQueue* queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
     if (!queue) {
         std::perror("Failed to open shared memory queue");
         return 1;
@@ -25,7 +34,7 @@ int main() {
 
     LogWriter writer;
     if (!writer.is_open()) {
-        close_shared_queue(queue, false);
+        close_shared_queue(queue, TELEMETRY_SHM, false);
         return 1;
     }
 
@@ -44,6 +53,6 @@ int main() {
         }
     }
 
-    close_shared_queue(queue, false);
+    close_shared_queue(queue, TELEMETRY_SHM, false);
     return 0;
 }

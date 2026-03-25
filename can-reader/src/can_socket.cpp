@@ -1,3 +1,11 @@
+/**
+ * can_socket.cpp       CAN Socket Interface
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "can_socket.hpp"
 #include <sys/socket.h>
 #include <sys/ioctl.h>

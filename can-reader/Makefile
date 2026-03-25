@@ -3,7 +3,7 @@ OBJ_DIR = obj
 TARGET = can-reader
 
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
-COMMON_SRCS = ../common/shared_memory.cpp ../common/config_parser.cpp ../common/dbc_parser.cpp
+COMMON_SRCS = ../common/config_parser.cpp ../common/dbc_parser.cpp
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o) $(COMMON_SRCS:../common/%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(TARGET)

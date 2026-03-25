@@ -1,46 +1,76 @@
 {
     "screens": [
         {
-            "name": "screen_main",
+            "name": "RPM",
             "widgets": [
                 {
-                    "type": "gauge",
+                    "type": "number",
                     "alarm": false,
                     "position": {
                         "x": 0,
                         "y": 0,
-                        "width": 3,
-                        "height": 3
+                        "width": 2,
+                        "height": 2
                     },
                     "data": {
                         "can_id": "0x100",
-                        "can_id_label": "Voltage",
-                        "signal": "voltage",
-                        "unit": "pressure",
-                        "min": -40,
-                        "max": 60,
-                        "caution_threshold": 40,
-                        "critical_threshold": 50
+                        "can_id_label": "RPM",
+                        "signal": "rpm",
+                        "unit": "rpm",
+                        "min": 0,
+                        "max": 8000,
+                        "caution_threshold": 6000,
+                        "critical_threshold": 7500
                     }
-                },
+                }
+            ]
+        },
+        {
+            "name": "Voltage",
+            "widgets": [
                 {
-                    "type": "bar",
+                    "type": "number",
                     "alarm": false,
                     "position": {
-                        "x": 3,
+                        "x": 0,
                         "y": 0,
                         "width": 2,
-                        "height": 3
+                        "height": 2
                     },
                     "data": {
-                        "can_id": "0x100",
-                        "can_id_label": "State of Charge",
-                        "signal": "state_of_charge",
-                        "unit": "pressure",
+                        "can_id": "0x101",
+                        "can_id_label": "Voltage",
+                        "signal": "voltage",
+                        "unit": "voltage",
                         "min": 0,
-                        "max": 100,
-                        "caution_threshold": 30,
-                        "critical_threshold": 15
+                        "max": 400,
+                        "caution_threshold": 300,
+                        "critical_threshold": 350
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Temp",
+            "widgets": [
+                {
+                    "type": "number",
+                    "alarm": false,
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 2,
+                        "height": 2
+                    },
+                    "data": {
+                        "can_id": "0x102",
+                        "can_id_label": "Temp",
+                        "signal": "temp",
+                        "unit": "temperature",
+                        "min": 0,
+                        "max": 120,
+                        "caution_threshold": 90,
+                        "critical_threshold": 105
                     }
                 }
             ]

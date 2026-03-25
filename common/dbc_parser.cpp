@@ -1,3 +1,11 @@
+/**
+ * dbc_parser.cpp       DBC File Parser
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include <fstream>
 #include <string>
 #include <regex>

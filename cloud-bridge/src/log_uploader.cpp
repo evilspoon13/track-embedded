@@ -1,3 +1,11 @@
+/**
+ * log_uploader.cpp     Log File Uploader
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "log_uploader.hpp"
 
 #include <chrono>

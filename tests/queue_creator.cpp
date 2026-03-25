@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "shared_memory.hpp"
+#include "telemetry_queue.hpp"
 
 static volatile sig_atomic_t running = 1;
 
@@ -19,7 +20,7 @@ int main() {
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
-    TelemetryQueue* queue = open_shared_queue(true);
+    TelemetryQueue* queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, true);
     if (!queue) {
         std::perror("Failed to create shared memory queue");
         return 1;
@@ -31,7 +32,7 @@ int main() {
         sleep(1);
     }
 
-    close_shared_queue(queue, true);
+    close_shared_queue(queue, TELEMETRY_SHM, true);
     printf("Queue released.\n");
     return 0;
 }

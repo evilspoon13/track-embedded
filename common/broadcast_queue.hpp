@@ -1,3 +1,11 @@
+/**
+ * broadcast_queue.hpp  Lock-Free Broadcast Queue
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_BROADCAST_QUEUE_HPP
 #define TRACK_BROADCAST_QUEUE_HPP
 

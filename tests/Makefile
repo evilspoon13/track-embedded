@@ -5,7 +5,6 @@ LDFLAGS = -lrt -lpthread
 OBJ_DIR = obj
 TARGETS = queue_reader queue_creator
 
-COMMON_SRCS = ../common/shared_memory.cpp
 
 all: $(TARGETS)
 
@@ -16,9 +15,6 @@ queue_creator: $(OBJ_DIR)/queue_creator.o $(OBJ_DIR)/shared_memory.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/shared_memory.o: ../common/shared_memory.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR):

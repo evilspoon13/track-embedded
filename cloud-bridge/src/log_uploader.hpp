@@ -1,3 +1,11 @@
+/**
+ * log_uploader.hpp     Log File Uploader
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef _LOG_UPLOADER_HPP
 #define _LOG_UPLOADER_HPP
 

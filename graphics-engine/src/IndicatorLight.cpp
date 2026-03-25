@@ -1,3 +1,11 @@
+/**
+ * IndicatorLight.cpp   Indicator Light Widget
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "Widgets.h"
 #include <cmath>
 

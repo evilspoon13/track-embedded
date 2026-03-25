@@ -1,3 +1,11 @@
+/**
+ * log_writer.hpp       Telemetry Log Writer
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #ifndef TRACK_LOG_WRITER_HPP
 #define TRACK_LOG_WRITER_HPP
 

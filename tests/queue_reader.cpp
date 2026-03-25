@@ -1,6 +1,15 @@
+/**
+ * queue_reader.cpp     Queue Reader Test
+ *
+ * @author      Cameron Stone '26 <cameron28202@gmail.com>
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include <csignal>
 #include <cstdio>
 
+#include "telemetry_queue.hpp"
 #include "shared_memory.hpp"
 
 static volatile sig_atomic_t running = 1;
@@ -15,7 +24,7 @@ int main() {
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
-    TelemetryQueue* queue = open_shared_queue(false);
+    TelemetryQueue* queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
     if (!queue) {
         std::perror("Failed to open shared memory queue");
         return 1;
@@ -30,6 +39,6 @@ int main() {
         });
     }
 
-    close_shared_queue(queue, false);
+    close_shared_queue(queue, TELEMETRY_SHM, false);
     return 0;
 }

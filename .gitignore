@@ -8,6 +8,7 @@ graphics-engine/graphics-engine
 data-logger/data-logger
 cloud-bridge/cloud-bridge
 
+captive-portal/__pycache__
 
 # clangd
 compile_commands.json

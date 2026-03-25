@@ -1,3 +1,11 @@
+/**
+ * GraphWidget.cpp      Graph Widget
+ *
+ * @author      Justin Busker '26
+ *
+ * @copyright   Texas A&M University
+ */
+
 #include "Widgets.h"
 
 void GraphWidget::Draw(const Font &font) const {
