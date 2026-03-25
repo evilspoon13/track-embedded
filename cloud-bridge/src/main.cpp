@@ -49,6 +49,7 @@ int main() {
     std::string url = get_env("CB_URL", "ws://localhost:9002");
     std::string device_id = get_env("CB_DEVICE_ID", "dev-001");
     std::string device_secret = get_env("CB_DEVICE_SECRET", "");
+    std::string upload_url = get_env("CB_UPLOAD_URL", "http://localhost:3000/api/logs");
 
     // 20hz .. don't need crazy high update rates for telem
     constexpr int send_interval_ms = 50;
@@ -65,7 +66,7 @@ int main() {
 
     ConfigReceiver config_receiver("/tmp/graphics.json");
 
-    LogUploader log_uploader("/tmp/track-logs");
+    LogUploader log_uploader("/tmp/track-logs", upload_url, device_id);
 
     log_uploader.start();
 
@@ -81,7 +82,7 @@ int main() {
     int64_t last_send_time = 0;
     int64_t last_heartbeat_time = 0;
 
-    printf("Cloud bridge started. url=%s device=%s\n", url.c_str(), device_id.c_str());
+    printf("Cloud bridge started. ws=%s upload=%s device=%s\n", url.c_str(), upload_url.c_str(), device_id.c_str());
 
     while (running) {
         std::size_t prev = pos;
