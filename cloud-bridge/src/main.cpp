@@ -66,7 +66,7 @@ int main() {
 
     ConfigReceiver config_receiver("/tmp/graphics.json");
 
-    LogUploader log_uploader("/tmp/track-logs", upload_url, device_id);
+    LogUploader log_uploader("/tmp/track-logs", upload_url, device_id, device_secret);
 
     log_uploader.start();
 

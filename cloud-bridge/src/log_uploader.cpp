@@ -21,8 +21,9 @@ static constexpr int POLL_INTERVAL_S = 10;
 
 LogUploader::LogUploader(const std::string& log_dir,
                          const std::string& upload_url,
-                         const std::string& device_id)
-    : log_dir_(log_dir), upload_url_(upload_url), device_id_(device_id) {}
+                         const std::string& device_id,
+                         const std::string& device_secret)
+    : log_dir_(log_dir), upload_url_(upload_url), device_id_(device_id), device_secret_(device_secret) {}
 
 LogUploader::~LogUploader() {
     stop();
@@ -88,6 +89,7 @@ bool LogUploader::upload_file(const std::string& path, const std::string& filena
     ix::HttpClient client;
     auto args = client.createRequest(url, ix::HttpClient::kPut);
     args->extraHeaders["X-Device-ID"] = device_id_;
+    args->extraHeaders["X-Device-Secret"] = device_secret_;
     args->extraHeaders["Content-Type"] = "application/octet-stream";
     args->connectTimeout = 10;
     args->transferTimeout = 60;

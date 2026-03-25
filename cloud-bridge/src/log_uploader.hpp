@@ -17,7 +17,8 @@ class LogUploader {
 public:
     LogUploader(const std::string& log_dir,
                 const std::string& upload_url,
-                const std::string& device_id);
+                const std::string& device_id,
+                const std::string& device_secret);
     ~LogUploader();
 
     void start();
@@ -26,6 +27,7 @@ private:
     std::string log_dir_;
     std::string upload_url_;
     std::string device_id_;
+    std::string device_secret_;
     std::thread upload_thread_;
     std::atomic<bool> running_{false};
 
