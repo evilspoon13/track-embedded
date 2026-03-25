@@ -3,17 +3,19 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -I../common
 LDFLAGS = -lrt -lpthread
 
 OBJ_DIR = obj
-TARGET = queue_reader
+TARGETS = queue_reader queue_creator
 
-SRCS = queue_reader.cpp ../common/shared_memory.cpp
-OBJS = $(OBJ_DIR)/queue_reader.o $(OBJ_DIR)/shared_memory.o
+COMMON_SRCS = ../common/shared_memory.cpp
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+queue_reader: $(OBJ_DIR)/queue_reader.o $(OBJ_DIR)/shared_memory.o
+	$(CXX) $^ -o $@ $(LDFLAGS)
 
-$(OBJ_DIR)/queue_reader.o: queue_reader.cpp | $(OBJ_DIR)
+queue_creator: $(OBJ_DIR)/queue_creator.o $(OBJ_DIR)/shared_memory.o
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+$(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/shared_memory.o: ../common/shared_memory.cpp | $(OBJ_DIR)
@@ -23,6 +25,6 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(OBJ_DIR) $(TARGETS)
 
 .PHONY: all clean
