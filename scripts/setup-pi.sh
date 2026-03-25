@@ -9,23 +9,23 @@ echo "=== T.R.A.C.K. Pi Setup ==="
 # system packages
 echo "Installing system packages..."
 sudo apt update && sudo apt install -y \
-  build-essential \
-  g++ \
-  git \
-  cmake \
-  python3-venv \
-  can-utils \
-  libzstd-dev \
-  libssl-dev \
-  zlib1g-dev \
-  nlohmann-json3-dev \
-  libasound2-dev \
-  libdrm-dev \
-  libgbm-dev \
-  libegl-dev \
-  libgles2-mesa-dev \
-  hostapd \
-  dnsmasq
+    build-essential \
+    g++ \
+    git \
+    cmake \
+    python3-venv \
+    can-utils \
+    libzstd-dev \
+    libssl-dev \
+    zlib1g-dev \
+    nlohmann-json3-dev \
+    libasound2-dev \
+    libdrm-dev \
+    libgbm-dev \
+    libegl-dev \
+    libgles2-mesa-dev \
+    hostapd \
+    dnsmasq
 
 # raylib (built for DRM/framebuffer, not X11)
 if [ -f /usr/local/include/raylib.h ]; then

@@ -37,8 +37,9 @@ LogWriter::~LogWriter() {
 
     // write marker so cloud-bridge knows this file is finalized
     std::string done_path = path_.substr(0, path_.size() - 4) + ".done";
-    FILE* marker = fopen(done_path.c_str(), "w");
-    if (marker) fclose(marker);
+    FILE *marker = fopen(done_path.c_str(), "w");
+    if (marker)
+      fclose(marker);
   }
 }
 

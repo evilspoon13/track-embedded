@@ -55,7 +55,7 @@ int main() {
 
     ConfigReceiver config_receiver("/tmp/graphics.json");
 
-    LogUploader log_uploader("/tmp/track-logs");
+    LogUploader log_uploader("/tmp/track-logs", ws, device_id);
 
     log_uploader.start();
 
@@ -123,8 +123,8 @@ int main() {
     }
 
     printf("Cloud bridge shutting down\n");
-    ws.stop();
     log_uploader.stop();
+    ws.stop();
     close_shared_queue(queue, false);
     return 0;
 }
