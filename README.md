@@ -1,96 +1,103 @@
 # T.R.A.C.K. — Telemetry Rendering And Capture Kit
 
-A low-cost, configurable real-time driver display and telemetry logging system for Formula SAE Electric. Built on embedded Linux (Raspberry Pi 4), targeting 60 FPS rendering with <50 ms CAN-to-screen latency.
+Real-time driver display and telemetry system for Formula SAE EV teams. Runs on a Raspberry Pi 4 with a CAN bus interface, rendering configurable dashboard widgets at 60 FPS on a 7" HDMI display.
 
-## Team
+The system is split across two repos that live side by side:
 
-| Member | Role |
-|---|---|
-| Jack Williams | Team Lead, CAN Development |
-| Cameron Stone | CAN Development |
-| Justin Busker | Graphics Engine |
-| Alonso Peralta Espinoza | Web App Frontend |
-| Brayden Bailey | Web App Backend |
-| Campbell Wright | Hardware / PCB Design |
+- **track-embedded/** — C++ processes (CAN reader, graphics engine, data logger), Flask captive portal, systemd services
+- **track-web/** — React/Vite frontend + Express/TypeScript backend (cloud portal)
 
-Texas A&M University — CSCE 483
+The same React UI serves both the Pi (via Flask, no auth, local config files) and the cloud (via Express, Firebase auth, Firestore). Build-time feature flags control which features are included in each build.
 
 ## Architecture
 
 ```
 [CAN Bus] ─► [can-reader] ─► (shared memory) ─┬─► [graphics-engine] ─► HDMI Display
-                                                └─► [data-logger] ─► SD Card
+                                                ├─► [data-logger] ─► SD Card
+                                                └─► [captive-portal] ─► Web UI
 
-[web-app backend] ◄─► [web-app frontend]
-       │
-       ▼
-  config JSON ──► SIGHUP ──► processes reload
+[User's phone/laptop]
+      │
+      ├─ On Pi's AP ──► Flask (port 80) ──► static React build ──► /api/* ──► local JSON + shared memory
+      │
+      └─ On internet ──► Express (cloud) ──► static React build ──► /api/* ──► Firestore
 ```
 
-Multi-process pipeline with shared memory IPC. Each process is isolated — a crash in one does not affect the others.
+## Prerequisites
 
-## Repository Structure
+- Raspberry Pi 4 with Raspberry Pi OS
+- MCP2515 CAN controller + TJA1050 transceiver (or vcan for testing)
+- Node.js 18+ and npm (for building the UI)
 
-```
-track-embedded/
-├── can-reader/          # CAN frame ingestion via SocketCAN
-├── graphics-engine/     # Real-time display rendering
-├── data-logger/         # Telemetry logging and compression
-├── common/              # Shared C++ headers (queue, config, IPC)
-├── web-server/
-│   ├── backend/         # TypeScript + Express — config API
-│   └── frontend/        # TypeScript + React — configuration UI
-├── config/              # JSON configuration files
-├── scripts/             # Build and tooling scripts
-└── systemd/             # Service files for deployment
-```
+## First-Time Pi Setup
 
-## Modules
-
-### can-reader
-Reads CAN frames via SocketCAN, decodes signals per configuration, and publishes to shared memory. Supports hot-reload via SIGHUP.
-
-### graphics-engine
-Consumes telemetry from shared memory and renders the driver display at 60 FPS. Supports configurable widget layouts and multiple screens.
-
-### data-logger
-Consumes telemetry from shared memory, batches writes, and logs to disk with compression. Exports in standard formats for post-run analysis.
-
-### common
-Shared C++ headers: broadcast queue, shared memory helpers, telemetry message types, and configuration parsing.
-
-### web-app
-- **Backend** (TypeScript / Express): Config API — manages channel mappings, widget layouts, and alert thresholds. Writes config and signals processes to reload.
-- **Frontend** (TypeScript / React): Configuration UI — drag-and-drop layout editor, CAN channel setup, alert configuration. Accessible from any device on the network.
-
-## Hardware
-
-- Raspberry Pi 4
-- MCP2515 CAN controller + TJA1050 transceiver
-- Custom PCB (power regulation, button inputs, status LEDs)
-- 7" HDMI display
-
-## Performance Targets
-
-| Metric | Target |
-|---|---|
-| Rendering | 60 FPS stable |
-| CAN-to-screen latency | < 50 ms |
-| Continuous runtime | 30+ minutes without degradation |
-| Unit cost | < $500 |
-
-## Build
+Run once on a fresh Pi:
 
 ```bash
-./scripts/build.sh              # Build all C++ modules
-./scripts/clean.sh              # Clean all builds
-./scripts/gen-compile-commands.sh  # Generate compile_commands.json for clangd
+# 1. Clone both repos side by side
+git clone <track-embedded-url>
+git clone <track-web-url>
+
+# 2. Install system dependencies, build raylib, build C++ binaries
+cd track-embedded
+./scripts/setup-pi.sh
+
+# 3. Build the React UI for the Pi (no auth, no Firebase)
+./scripts/build-ui.sh
+
+# 4. Deploy everything to /opt/track/ and enable systemd services
+sudo ./scripts/deploy.sh
+
+# 5. Configure networking (see setup-pi.sh output for details)
+sudo cp config/hostapd.conf /etc/hostapd/hostapd.conf
+sudo cp config/dnsmasq.conf /etc/dnsmasq.d/track.conf
+
+# 6. Add to /boot/config.txt:
+#   dtoverlay=vc4-kms-v3d
+#   gpu_mem=128
+#   dtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25
+
+# 7. Reboot — all services start automatically
+sudo reboot
 ```
 
-## Deployment
+## Updating After Code Changes
 
-Services deploy to `/opt/track/` and are managed via systemd. Graphics and logger depend on can-reader being up first.
+After pulling new changes on the Pi:
 
-## License
+```bash
+cd track-embedded
 
-Internal project — Texas A&M Formula SAE Electric
+# Rebuild C++ (if embedded code changed)
+make clean && make PLATFORM=DRM
+
+# Rebuild UI (if frontend code changed)
+./scripts/build-ui.sh
+
+# Redeploy and restart
+sudo ./scripts/deploy.sh
+sudo systemctl restart track-setup track-can-interface track-can-reader track-graphics track-logger track-cloud-bridge track-portal
+```
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `scripts/setup-pi.sh` | One-time setup: apt packages, raylib, ixwebsocket, venv, initial build |
+| `scripts/build-ui.sh` | Build React UI with Pi feature flags, output to `captive-portal/ui/` |
+| `scripts/deploy.sh` | Copy binaries, config, and portal to `/opt/track/`, enable systemd services |
+| `scripts/run.sh` | Run all processes in foreground for local dev/testing (no systemd) |
+| `scripts/setup-vcan.sh` | Set up virtual CAN interface for testing without hardware |
+| `scripts/test-can.sh` | Send test CAN frames for development |
+
+## Boot Order (systemd)
+
+```
+track-setup (tmpfs dirs)
+    └─► track-can-interface (set CAN bitrate)
+            └─► track-can-reader (CAN → shared memory)
+                    ├─► track-graphics (shared memory → display)
+                    ├─► track-logger (shared memory → disk)
+                    ├─► track-cloud-bridge (shared memory → cloud)
+                    └─► track-portal (Flask on port 80)
+```

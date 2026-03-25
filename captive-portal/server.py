@@ -125,7 +125,53 @@ def api_wifi_connect():
     return jsonify({"ok": ok, "message": msg})
 
 
-# -- config API --
+# -- config helpers --
+
+FRAME_PARSER_PATH = CONFIG_DIR / "frame-parser.json"
+
+
+def read_graphics_config():
+    try:
+        return json.loads(GRAPHICS_PATH.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"screens": []}
+
+
+def write_graphics_config(config):
+    if not atomic_write(GRAPHICS_PATH, json.dumps(config, indent=2)):
+        return False
+    send_sighup("track-graphics.service")
+    return True
+
+
+def read_frame_parser_config():
+    try:
+        return json.loads(FRAME_PARSER_PATH.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"frames": {}}
+
+
+def widget_to_api(w):
+    """Convert stored widget (hex string can_id) to API format (integer can_id)."""
+    w = dict(w)
+    data = dict(w.get("data", {}))
+    can_id_str = data.get("can_id", "0x0")
+    data["can_id"] = int(can_id_str, 16) if isinstance(can_id_str, str) else can_id_str
+    w["data"] = data
+    return w
+
+
+def widget_from_api(w):
+    """Convert API widget (integer can_id) to storage format (hex string can_id)."""
+    w = dict(w)
+    data = dict(w.get("data", {}))
+    can_id = data.get("can_id", 0)
+    data["can_id"] = hex(can_id) if isinstance(can_id, int) else can_id
+    w["data"] = data
+    return w
+
+
+# -- config API (full file) --
 
 @app.route("/api/graphics", methods=["GET"])
 @app.route("/api/config/graphics", methods=["GET"])
@@ -153,6 +199,87 @@ def api_set_graphics():
     return jsonify({"ok": True})
 
 
+# -- per-screen CRUD (matches Express API) --
+
+@app.route("/api/graphics/screens", methods=["GET"])
+def api_get_screen_names():
+    config = read_graphics_config()
+    names = [s["name"] for s in config.get("screens", [])]
+    return jsonify({"screens": names})
+
+
+@app.route("/api/graphics/screens/<screen_id>", methods=["GET"])
+def api_get_screen(screen_id):
+    config = read_graphics_config()
+    for s in config.get("screens", []):
+        if s["name"] == screen_id:
+            return jsonify({
+                "name": s["name"],
+                "widgets": [widget_to_api(w) for w in s.get("widgets", [])],
+            })
+    return jsonify({"msg": "Screen not found"}), 404
+
+
+@app.route("/api/graphics/screens/<screen_id>", methods=["POST"])
+def api_update_screen(screen_id):
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"success": False, "msg": "Invalid JSON"}), 400
+
+    config = read_graphics_config()
+    new_screen = {
+        "name": data.get("name", screen_id),
+        "widgets": [widget_from_api(w) for w in data.get("widgets", [])],
+    }
+
+    idx = next((i for i, s in enumerate(config["screens"]) if s["name"] == screen_id), -1)
+    if idx >= 0:
+        config["screens"][idx] = new_screen
+    else:
+        config["screens"].append(new_screen)
+
+    if not write_graphics_config(config):
+        return jsonify({"success": False, "msg": "Failed to write config"}), 500
+    return jsonify({"success": True})
+
+
+@app.route("/api/graphics/screens/<screen_id>", methods=["DELETE"])
+def api_delete_screen(screen_id):
+    config = read_graphics_config()
+    idx = next((i for i, s in enumerate(config["screens"]) if s["name"] == screen_id), -1)
+    if idx == -1:
+        return jsonify({"success": False}), 404
+    config["screens"].pop(idx)
+    if not write_graphics_config(config):
+        return jsonify({"success": False, "msg": "Failed to write config"}), 500
+    return jsonify({"success": True})
+
+
+# -- frame parser API --
+
+@app.route("/api/frame-parser", methods=["GET"])
+def api_get_frame_parser():
+    config = read_frame_parser_config()
+    return jsonify(config)
+
+
+@app.route("/api/frame-parser", methods=["POST"])
+def api_update_frame_parser():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"success": False, "msg": "Invalid JSON"}), 400
+    can_id = data.get("can_id")
+    frame_def = data.get("frameDefinition")
+    if not can_id or not frame_def:
+        return jsonify({"success": False, "msg": "Missing can_id or frameDefinition"}), 400
+
+    config = read_frame_parser_config()
+    config.setdefault("frames", {})[can_id] = frame_def
+    if not atomic_write(FRAME_PARSER_PATH, json.dumps(config, indent=2)):
+        return jsonify({"success": False, "msg": "Failed to write config"}), 500
+    return jsonify({"success": True})
+
+
 @app.route("/api/dbc", methods=["GET"])
 @app.route("/api/config/dbc", methods=["GET"])
 def api_get_dbc():
@@ -176,7 +303,7 @@ def api_set_dbc():
     atomic_write(Path("/tmp/display.dbc"), body)
     send_sighup("track-can-reader.service")
     return jsonify({"ok": True})
-    
+
 
 # -- main --
 

@@ -1,84 +1,53 @@
 {
   "screens": [
     {
-      "name": "screen 1",
+      "name": "the screen",
       "widgets": [
         {
-          "type": "gauge",
-          "alarm": false,
-          "position": { "x": 0, "y": 0, "width": 2, "height": 3 },
+          "type": "indicator",
+          "alarm": true,
+          "position": {
+            "x": 9,
+            "y": 5,
+            "width": 1,
+            "height": 1
+          },
           "data": {
-            "can_id": "0x100",
-            "can_id_label": "BMS 1",
+            "can_id": "0x300",
+            "can_id_label": "",
+            "signal": "temperature",
+            "unit": "temperature",
+            "min": 0,
+            "max": 100,
+            "caution_threshold": 0,
+            "critical_threshold": 0
+          }
+        },
+        {
+          "type": "gauge",
+          "alarm": true,
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 2,
+            "height": 2
+          },
+          "data": {
+            "can_id": "0x300",
+            "can_id_label": "",
             "signal": "voltage",
-            "unit": "voltage",
-            "min": -40,
-            "max": 300,
-            "caution_threshold": 240,
-            "critical_threshold": 270
-          }
-        },
-        {
-          "type": "bar",
-          "alarm": false,
-          "position": { "x": 2, "y": 0, "width": 2, "height": 3 },
-          "data": {
-            "can_id": "0x100",
-            "can_id_label": "BMS 1",
-            "signal": "state_of_charge",
-            "unit": "percent",
+            "unit": "temperature",
             "min": 0,
             "max": 100,
-            "caution_threshold": 30,
-            "critical_threshold": 15
-          }
-        },
-        {
-          "type": "gauge",
-          "alarm": false,
-          "position": { "x": 4, "y": 0, "width": 2, "height": 3 },
-          "data": {
-            "can_id": "0x200",
-            "can_id_label": "Motor",
-            "signal": "speed",
-            "unit": "speed",
-            "min": 0,
-            "max": 100,
-            "caution_threshold": 70,
-            "critical_threshold": 90
-          }
-        },
-        {
-          "type": "gauge",
-          "alarm": false,
-          "position": { "x": 6, "y": 0, "width": 2, "height": 3 },
-          "data": {
-            "can_id": "0x200",
-            "can_id_label": "Motor",
-            "signal": "torque",
-            "unit": "torque",
-            "min": 0,
-            "max": 200,
-            "caution_threshold": 160,
-            "critical_threshold": 185
-          }
-        },
-        {
-          "type": "bar",
-          "alarm": false,
-          "position": { "x": 8, "y": 0, "width": 2, "height": 3 },
-          "data": {
-            "can_id": "0x200",
-            "can_id_label": "Motor",
-            "signal": "current",
-            "unit": "current",
-            "min": 0,
-            "max": 300,
-            "caution_threshold": 240,
-            "critical_threshold": 280
+            "caution_threshold": 0,
+            "critical_threshold": 0
           }
         }
       ]
+    },
+    {
+      "name": "Screen 3",
+      "widgets": []
     }
   ]
 }
