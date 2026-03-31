@@ -27,6 +27,7 @@ fi
 echo "Copying config..."
 sudo cp "$ROOT/config/graphics.json" /opt/track/config/graphics.json
 sudo cp "$ROOT/config/display.dbc"   /opt/track/config/display.dbc
+sudo cp "$ROOT/config/track.env"     /opt/track/config/track.env
 
 # copy captive portal
 echo "Copying captive portal..."

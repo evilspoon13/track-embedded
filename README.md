@@ -79,6 +79,33 @@ sudo ./scripts/deploy.sh
 sudo systemctl restart track-setup track-can-interface track-can-reader track-graphics track-logger track-cloud-bridge track-portal
 ```
 
+## Selecting The CAN Interface
+
+Systemd now reads the active CAN settings from `/opt/track/config/track.env`.
+
+Default:
+
+```bash
+CAN_IFACE=can0
+CAN_MODE=can
+CAN_BITRATE=500000
+```
+
+For virtual CAN:
+
+```bash
+CAN_IFACE=vcan0
+CAN_MODE=vcan
+CAN_BITRATE=500000
+```
+
+Apply the change with:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart track-can-interface track-can-reader track-graphics track-logger track-cloud-bridge
+```
+
 ## Scripts
 
 | Script | Purpose |
