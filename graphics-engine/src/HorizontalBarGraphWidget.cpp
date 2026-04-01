@@ -55,12 +55,17 @@ void HorizontalBarGraphWidget::Draw(const Font& font) const {
         float v  = minValue + (maxValue - minValue) * t;
         float xx = barRect.x + t * barRect.width;
 
-        DrawLineEx({xx, tickY0}, {xx, tickY1}, 2.0f * scale, tickColor);
+        float tickX = xx;
         if (showTickLabels) {
             const char* s  = TextFormat("%.0f", v);
             Vector2     sz = MeasureTextEx(font, s, tickFs, tickSpacing);
-            DrawTextEx(font, s, {xx - sz.x * 0.5f, tickY1 + 4.0f * scale}, tickFs, tickSpacing, tickColor);
+            float       lx = xx - sz.x * 0.5f;
+            if (lx + sz.x > right) lx = right - sz.x;
+            if (lx < left)         lx = left;
+            tickX = lx + sz.x * 0.5f;
+            DrawTextEx(font, s, {lx, tickY1 + 4.0f * scale}, tickFs, tickSpacing, tickColor);
         }
+        DrawLineEx({tickX, tickY0}, {tickX, tickY1}, 2.0f * scale, tickColor);
     }
 
     const char* vstr = format_value(value, decimals);

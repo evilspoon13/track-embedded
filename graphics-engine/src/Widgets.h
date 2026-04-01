@@ -30,8 +30,8 @@ struct NumberWidget
     Color panelFill   = Color{0, 0, 0, 180};
     Color panelBorder = Color{255, 255, 255, 80};
 
-    float labelSize = 14.0f;
-    float valueSize = 30.0f;
+    float labelSize = 20.0f;
+    float valueSize = 34.0f;
     float pad = 6.0f;
     float gapBelowLabel = 6.0f;
     float border = 2.0f;
@@ -102,9 +102,12 @@ struct GaugeWidget
     float endDeg   = 405.0f;
 
     float ringThickness = 9.0f;
+    float ringMargin = 20.0f;       // extra inset from panel edge — increase to shrink the ring
+    float tickLabelOffset = 14.0f;  // gap between ring outer edge and tick label — increase for more spacing
 
-    float valueTextSize = 26.0f;
-    float unitsTextSize = 11.0f;
+    float tickLabelSize = 15.0f;
+    float valueTextSize = 32.0f;
+    float unitsTextSize = 30.0f;
 
     void Draw(const Font& font) const;
 };
@@ -146,7 +149,7 @@ struct BarGraphWidget
     float border = 2.0f;
 
     // ---- Permanent layout changes you wanted ----
-    float pad = 10.0f;            // more padding (top/bottom/left/right)
+    float pad = 12.0f;            // more padding (top/bottom/left/right)
 
     // Wider bar
     float barWidth = 26.0f;       // was 18
@@ -155,11 +158,11 @@ struct BarGraphWidget
     float barXFrac = 0.45f;       // was 0.30
 
     // Bigger tick labels
-    float tickLabelSize = 12.0f;  // was 9
+    float tickLabelSize = 16.0f;  // was 9
 
     // Text sizing (bottom value + units)
-    float valueTextSize = 24.0f;
-    float unitsTextSize = 11.0f;
+    float valueTextSize = 28.0f;
+    float unitsTextSize = 14.0f;
 
     void Draw(const Font& font) const;
 };
@@ -191,13 +194,13 @@ struct HorizontalBarGraphWidget
     Color textColor    = RAYWHITE;
 
     float border = 2.0f;
-    float pad = 10.0f;
+    float pad = 12.0f;
 
     float barHeight = 26.0f;
-    float tickLabelSize = 12.0f;
+    float tickLabelSize = 16.0f;
 
-    float valueTextSize = 24.0f;
-    float unitsTextSize = 11.0f;
+    float valueTextSize = 28.0f;
+    float unitsTextSize = 14.0f;
 
     void Draw(const Font& font) const;
 };
@@ -263,8 +266,8 @@ struct GraphWidget
     float pad = 10.0f;
 
     // Text sizing
-    float tickLabelSize = 10.0f;
-    float axisLabelSize = 12.0f;
+    float tickLabelSize = 16.0f;
+    float axisLabelSize = 16.0f;
 
     // Plot margin inside panel
     float leftMargin = 36.0f;
