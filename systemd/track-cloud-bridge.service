@@ -8,7 +8,6 @@ Requires=track-can-reader.service
 Type=simple
 ExecStart=/opt/track/cloud-bridge
 Environment=CB_URL=wss://track-web.fly.dev/ws/pi
-Environment=CB_DEVICE_ID=dev-001
 Restart=on-failure
 RestartSec=5
 

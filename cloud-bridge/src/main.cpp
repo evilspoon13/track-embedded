@@ -11,11 +11,14 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <vector>
 
 #include <nlohmann/json.hpp>
+#include <ixwebsocket/IXHttpClient.h>
 
 #include "config_receiver.hpp"
 #include "log_uploader.hpp"
@@ -24,8 +27,10 @@
 #include "ws_client.hpp"
 
 static volatile sig_atomic_t running = 1;
+static volatile sig_atomic_t reload_flag = 0;
 
 static void signal_handler(int) { running = 0; }
+static void sighup_handler(int) { reload_flag = 1; }
 
 static std::string get_env(const char *name, const char *fallback) {
   const char *val = std::getenv(name);
@@ -38,18 +43,86 @@ static int64_t now_ms() {
       .count();
 }
 
+static constexpr const char *DEVICE_CONFIG_PATH = "/opt/track/config/device.json";
+
+struct DeviceIdentity {
+  std::string device_id;
+  std::string device_secret;
+  std::vector<std::string> team_members;
+};
+
+static DeviceIdentity read_device_config() {
+  DeviceIdentity id;
+  std::ifstream file(DEVICE_CONFIG_PATH);
+  if (!file.is_open()) {
+    printf("no device.json found, using env vars\n");
+    id.device_id = get_env("CB_DEVICE_ID", "dev-001");
+    id.device_secret = get_env("CB_DEVICE_SECRET", "");
+    return id;
+  }
+  try {
+    auto j = nlohmann::json::parse(file);
+    id.device_id = j.value("device_id", "dev-001");
+    id.device_secret = j.value("device_secret", "");
+    if (j.contains("team_members") && j["team_members"].is_array()) {
+      for (const auto &m : j["team_members"]) {
+        if (m.is_string()) id.team_members.push_back(m.get<std::string>());
+      }
+    }
+  } catch (const std::exception &e) {
+    printf("failed to parse device.json: %s\n", e.what());
+    id.device_id = get_env("CB_DEVICE_ID", "dev-001");
+    id.device_secret = get_env("CB_DEVICE_SECRET", "");
+  }
+  return id;
+}
+
+static void register_with_cloud(const std::string &base_url, const DeviceIdentity &id) {
+  if (id.team_members.empty()) {
+    printf("[register] no team members, skipping registration\n");
+    return;
+  }
+
+  // Derive HTTP URL from WebSocket URL
+  std::string http_url = base_url;
+  if (http_url.substr(0, 6) == "wss://") http_url = "https://" + http_url.substr(6);
+  else if (http_url.substr(0, 5) == "ws://") http_url = "http://" + http_url.substr(5);
+  // Strip /ws/pi path and replace with /api/devices/register
+  auto pos = http_url.find("/ws/");
+  if (pos != std::string::npos) http_url = http_url.substr(0, pos);
+  http_url += "/api/devices/register";
+
+  nlohmann::json body;
+  body["teamMembers"] = id.team_members;
+
+  ix::HttpClient client;
+  auto args = client.createRequest();
+  args->extraHeaders["X-Device-ID"] = id.device_id;
+  args->extraHeaders["X-Device-Secret"] = id.device_secret;
+  args->extraHeaders["Content-Type"] = "application/json";
+  args->body = body.dump();
+
+  auto response = client.post(http_url, args->body, args);
+  if (response->statusCode == 200) {
+    printf("device registered successfully\n");
+  } else {
+    printf("registration failed: %d %s\n", response->statusCode, response->body.c_str());
+  }
+}
+
 int main() {
   struct sigaction sa{};
   sa.sa_handler = signal_handler;
   sigaction(SIGINT, &sa, nullptr);
   sigaction(SIGTERM, &sa, nullptr);
 
-  // pull from env, fall back to defaults if not
-  std::string url = get_env("CB_URL", "wss://track-web.fly.dev/ws/pi");
-  std::string device_id = get_env("CB_DEVICE_ID", "dev-001");
-  std::string device_secret = get_env("CB_DEVICE_SECRET", "");
+  struct sigaction sa_hup{};
+  sa_hup.sa_handler = sighup_handler;
+  sigaction(SIGHUP, &sa_hup, nullptr);
 
-  // 20hz .. don't need crazy high update rates for telem
+  std::string url = get_env("CB_URL", "wss://track-web.fly.dev/ws/pi");
+  DeviceIdentity device = read_device_config();
+
   constexpr int send_interval_ms = 50;
   constexpr int heartbeat_interval_ms = 1000;
 
@@ -61,11 +134,11 @@ int main() {
     return 1;
   }
 
-  WsClient ws(url, device_id, device_secret);
+  WsClient ws(url, device.device_id, device.device_secret);
 
   ConfigReceiver config_receiver("/tmp/graphics.json");
 
-  LogUploader log_uploader("/tmp/track-logs", ws, device_id);
+  LogUploader log_uploader("/tmp/track-logs", ws, device.device_id);
 
   log_uploader.start();
 
@@ -76,19 +149,28 @@ int main() {
 
   ws.start();
 
+  register_with_cloud(url, device);
+
   std::size_t pos = queue->current_pos();
   std::unordered_map<std::string, double> signals;
   int64_t last_send_time = 0;
   int64_t last_heartbeat_time = 0;
 
-  printf("Cloud bridge started. url=%s device=%s\n", url.c_str(),
-         device_id.c_str());
+  printf("Cloud bridge started. url=%s device=%s\n", url.c_str(), device.device_id.c_str());
 
   while (running) {
+    // SIGHUP: re-read device.json and re-register (triggered by captive portal)
+    if (reload_flag) {
+        reload_flag = 0;
+        printf("reloading device.json\n");
+        device = read_device_config();
+        register_with_cloud(url, device);
+    }
+
     std::size_t prev = pos;
     queue->consume(pos, [&](const TelemetryMessage &msg) {
-      std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
-      signals[key] = msg.value;
+        std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
+        signals[key] = msg.value;
     });
 
     int64_t now = now_ms();
@@ -96,7 +178,7 @@ int main() {
       if (!signals.empty()) {
         nlohmann::json j;
         j["type"] = "telemetry";
-        j["device_id"] = device_id;
+        j["device_id"] = device.device_id;
         j["ts"] = now;
         j["signals"] = signals;
 
@@ -111,7 +193,7 @@ int main() {
       nlohmann::json heartbeat;
       heartbeat["type"] = "heartbeat";
       heartbeat["status"] = "connected";
-      heartbeat["device_id"] = device_id;
+      heartbeat["device_id"] = device.device_id;
       heartbeat["ts"] = now;
       ws.send(heartbeat.dump());
       last_heartbeat_time = now;

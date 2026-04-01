@@ -72,4 +72,4 @@ sudo systemctl enable \
 echo ""
 echo "=== Deploy complete ==="
 echo "Services enabled. They will start on next boot."
-echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-graphics track-logger track-portal"
+echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-graphics track-logger track-portal track-cloud-bridge"

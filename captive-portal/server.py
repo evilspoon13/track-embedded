@@ -8,7 +8,9 @@ server.py           Captive Portal Web Server
 
 import json
 import os
+import secrets
 import subprocess
+import uuid
 from pathlib import Path
 
 import cantools
@@ -20,6 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
 GRAPHICS_PATH = CONFIG_DIR / "graphics.json"
 DBC_PATH = CONFIG_DIR / "display.dbc"
+DEVICE_PATH = CONFIG_DIR / "device.json"
 UI_DIR = Path(__file__).resolve().parent / "ui"  # vite build output
 
 app = Flask(
@@ -375,9 +378,60 @@ def api_upload_dbc():
     return jsonify(config)
 
 
+# -- device identity --
+
+def read_device_config():
+    """Read device.json, creating it with a new UUID + secret if missing."""
+    if DEVICE_PATH.exists():
+        try:
+            return json.loads(DEVICE_PATH.read_text())
+        except (json.JSONDecodeError, OSError):
+            pass
+    config = {
+        "device_id": str(uuid.uuid4()),
+        "device_secret": secrets.token_hex(32),
+        "team_members": [],
+    }
+    atomic_write(DEVICE_PATH, json.dumps(config, indent=2))
+    return config
+
+
+def write_device_config(config):
+    return atomic_write(DEVICE_PATH, json.dumps(config, indent=2))
+
+
+@app.route("/api/device", methods=["GET"])
+def api_get_device():
+    config = read_device_config()
+    return jsonify({
+        "device_id": config["device_id"],
+        "team_members": config.get("team_members", []),
+    })
+
+
+@app.route("/api/device/team-members", methods=["POST"])
+def api_set_team_members():
+    data = request.get_json(silent=True)
+    if not data or "team_members" not in data:
+        return jsonify({"ok": False, "error": "Missing 'team_members' key"}), 400
+    members = data["team_members"]
+    if not isinstance(members, list) or not all(isinstance(m, str) for m in members):
+        return jsonify({"ok": False, "error": "'team_members' must be a list of strings"}), 400
+
+    config = read_device_config()
+    config["team_members"] = [m.strip().lower() for m in members if m.strip()]
+    if not write_device_config(config):
+        return jsonify({"ok": False, "error": "Failed to write device.json"}), 500
+
+    # Signal cloud-bridge to re-register with updated team members
+    send_sighup("track-cloud-bridge.service")
+    return jsonify({"ok": True, "team_members": config["team_members"]})
+
+
 # -- main --
 
 def main():
+    read_device_config()  # generate device.json on first boot
     port = int(os.environ.get("PORTAL_PORT", "80"))
     print(f"captive portal running on http://0.0.0.0:{port}")
     app.run(host="0.0.0.0", port=port)
