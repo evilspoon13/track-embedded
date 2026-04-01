@@ -11,7 +11,7 @@
 
 #include "config_types.hpp"
 
-constexpr const char* DEFAULT_DBC_PATH = "/tmp/display.dbc";
+constexpr const char* DEFAULT_DBC_PATH = "/opt/track/config/display.dbc";
 
 FrameMap load_dbc_config(const std::string& path);
 

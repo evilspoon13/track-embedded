@@ -9,21 +9,15 @@
 #include <fstream>
 #include <string>
 #include <regex>
-#include <stdexcept>
 
 #include "dbc_parser.hpp"
 
 // derive SignalType from bit length and signedness
 static SignalType derive_signal_type(int bit_length, bool is_signed) {
-    switch (bit_length) {
-        case 8:  return is_signed ? SignalType::INT8  : SignalType::UINT8;
-        case 16: return is_signed ? SignalType::INT16 : SignalType::UINT16;
-        case 32: return is_signed ? SignalType::INT32 : SignalType::UINT32;
-        case 64: return SignalType::DOUBLE;
-        default:
-            throw std::invalid_argument(
-                "unsupported signal bit length: " + std::to_string(bit_length));
-    }
+    if (bit_length <= 8)  return is_signed ? SignalType::INT8  : SignalType::UINT8;
+    if (bit_length <= 16) return is_signed ? SignalType::INT16 : SignalType::UINT16;
+    if (bit_length <= 32) return is_signed ? SignalType::INT32 : SignalType::UINT32;
+    return SignalType::DOUBLE;
 }
 
 FrameMap load_dbc_config(const std::string& path) {

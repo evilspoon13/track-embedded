@@ -11,6 +11,7 @@ import os
 import subprocess
 from pathlib import Path
 
+import cantools
 from flask import Flask, request, jsonify, redirect, send_from_directory, render_template
 
 import wifi
@@ -127,8 +128,6 @@ def api_wifi_connect():
 
 # -- config helpers --
 
-FRAME_PARSER_PATH = CONFIG_DIR / "frame-parser.json"
-
 
 def read_graphics_config():
     try:
@@ -144,11 +143,81 @@ def write_graphics_config(config):
     return True
 
 
-def read_frame_parser_config():
-    try:
-        return json.loads(FRAME_PARSER_PATH.read_text())
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"frames": {}}
+# -- DBC helpers --
+
+def signal_type_from_cantools(sig):
+    """Map a cantools signal to the type string the frontend expects."""
+    if sig.is_float:
+        return "double" if sig.length > 32 else "float"
+    if sig.is_signed:
+        if sig.length <= 8:
+            return "int8"
+        if sig.length <= 16:
+            return "int16"
+        return "int32"
+    if sig.length <= 8:
+        return "uint8"
+    if sig.length <= 16:
+        return "uint16"
+    return "uint32"
+
+
+def parse_dbc_to_config(raw):
+    """Parse raw DBC text into the { frames } JSON the frontend expects."""
+    db = cantools.database.load_string(raw)
+    frames = {}
+    for msg in db.messages:
+        can_id_hex = hex(msg.frame_id)
+        signals = []
+        for sig in msg.signals:
+            signals.append({
+                "name": sig.name,
+                "start_byte": sig.start,
+                "length": sig.length,
+                "type": signal_type_from_cantools(sig),
+                "scale": sig.scale,
+                "offset": sig.offset,
+            })
+        frames[can_id_hex] = {"can_id_label": msg.name, "signals": signals}
+    return {"frames": frames}
+
+
+def config_to_dbc(config):
+    """Convert { frames } JSON back to a raw DBC string."""
+    from cantools.database.conversion import IdentityConversion, LinearConversion
+
+    db = cantools.database.Database()
+    for can_id_hex, frame_def in config.get("frames", {}).items():
+        frame_id = int(can_id_hex, 16)
+        signals = []
+        for sig_def in frame_def.get("signals", []):
+            t = sig_def.get("type", "uint8")
+            is_signed = t.startswith("int")
+            is_float = t in ("float", "double")
+            scale = sig_def.get("scale", 1)
+            offset = sig_def.get("offset", 0)
+            if is_float:
+                conversion = IdentityConversion(is_float=True)
+            elif scale != 1 or offset != 0:
+                conversion = LinearConversion(scale=scale, offset=offset, is_float=False)
+            else:
+                conversion = None
+            signals.append(cantools.database.Signal(
+                name=sig_def["name"],
+                start=sig_def["start_byte"],
+                length=sig_def["length"],
+                is_signed=is_signed,
+                conversion=conversion,
+            ))
+        dlc = max((s.start + s.length for s in signals), default=0)
+        dlc = (dlc + 7) // 8  # bits to bytes
+        db.messages.append(cantools.database.Message(
+            frame_id=frame_id,
+            name=frame_def.get("can_id_label", f"MSG_{can_id_hex}"),
+            length=max(dlc, 1),
+            signals=signals,
+        ))
+    return db.as_dbc_string()
 
 
 def widget_to_api(w):
@@ -255,54 +324,55 @@ def api_delete_screen(screen_id):
     return jsonify({"success": True})
 
 
-# -- frame parser API --
+# -- DBC API (matches cloud backend) --
 
-@app.route("/api/frame-parser", methods=["GET"])
-def api_get_frame_parser():
-    config = read_frame_parser_config()
+@app.route("/api/dbc", methods=["GET"])
+def api_get_dbc():
+    """Return parsed DBC as JSON { frames: { "0x...": { can_id_label, signals } } }."""
+    try:
+        raw = DBC_PATH.read_text()
+    except FileNotFoundError:
+        return jsonify({"msg": "Not Found"}), 404
+    try:
+        config = parse_dbc_to_config(raw)
+    except Exception as e:
+        return jsonify({"msg": str(e)}), 500
     return jsonify(config)
 
 
-@app.route("/api/frame-parser", methods=["POST"])
-def api_update_frame_parser():
+@app.route("/api/dbc", methods=["POST"])
+def api_update_dbc():
+    """Accept { frames: { ... } } JSON, convert to DBC, and save."""
+    data = request.get_json(silent=True)
+    if not data or "frames" not in data:
+        return jsonify({"msg": "Missing 'frames' key"}), 400
+    try:
+        raw = config_to_dbc(data)
+    except Exception as e:
+        return jsonify({"msg": str(e)}), 500
+    if not atomic_write(DBC_PATH, raw):
+        return jsonify({"msg": "Failed to write DBC"}), 500
+    send_sighup("track-can-reader.service")
+    return jsonify({"msg": "Wrote DBC"})
+
+
+@app.route("/api/dbc/upload", methods=["POST"])
+def api_upload_dbc():
+    """Accept { raw: "..." } raw DBC string, save it, return parsed frames."""
     data = request.get_json(silent=True)
     if not data:
-        return jsonify({"success": False, "msg": "Invalid JSON"}), 400
-    can_id = data.get("can_id")
-    frame_def = data.get("frameDefinition")
-    if not can_id or not frame_def:
-        return jsonify({"success": False, "msg": "Missing can_id or frameDefinition"}), 400
-
-    config = read_frame_parser_config()
-    config.setdefault("frames", {})[can_id] = frame_def
-    if not atomic_write(FRAME_PARSER_PATH, json.dumps(config, indent=2)):
-        return jsonify({"success": False, "msg": "Failed to write config"}), 500
-    return jsonify({"success": True})
-
-
-@app.route("/api/dbc", methods=["GET"])
-@app.route("/api/config/dbc", methods=["GET"])
-def api_get_dbc():
+        return jsonify({"msg": "Missing raw DBC string in body.raw"}), 400
+    raw = data.get("raw", "")
+    if not raw or not isinstance(raw, str):
+        return jsonify({"msg": "Missing raw DBC string in body.raw"}), 400
     try:
-        return app.response_class(
-            DBC_PATH.read_text(),
-            mimetype="text/plain; charset=utf-8",
-        )
-    except FileNotFoundError:
-        return jsonify({"error": "DBC file not found"}), 404
-
-
-@app.route("/api/dbc", methods=["POST"])
-@app.route("/api/config/dbc", methods=["POST"])
-def api_set_dbc():
-    body = request.get_data(as_text=True)
-    if not body.strip():
-        return jsonify({"ok": False, "error": "Empty DBC content"}), 400
-    if not atomic_write(DBC_PATH, body):
-        return jsonify({"ok": False, "error": "Failed to write DBC"}), 500
-    atomic_write(Path("/tmp/display.dbc"), body)
+        config = parse_dbc_to_config(raw)
+    except Exception:
+        return jsonify({"msg": "Invalid DBC file — could not be parsed."}), 400
+    if not atomic_write(DBC_PATH, raw):
+        return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
-    return jsonify({"ok": True})
+    return jsonify(config)
 
 
 # -- main --

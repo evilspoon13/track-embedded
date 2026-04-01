@@ -25,9 +25,13 @@ fi
 
 # copy config files
 echo "Copying config..."
-sudo cp "$ROOT/config/graphics.json" /opt/track/config/graphics.json
-sudo cp "$ROOT/config/display.dbc"   /opt/track/config/display.dbc
-sudo cp "$ROOT/config/track.env"     /opt/track/config/track.env
+for cfg in graphics.json display.dbc track.env; do
+    if [ ! -f "/opt/track/config/$cfg" ]; then
+        sudo cp "$ROOT/config/$cfg" "/opt/track/config/$cfg"
+    else
+        echo "  Skipping $cfg (already exists)"
+    fi
+done
 
 # copy captive portal
 echo "Copying captive portal..."
@@ -42,13 +46,14 @@ if [ -d "$ROOT/captive-portal/ui" ]; then
     sudo cp -r "$ROOT/captive-portal/ui" /opt/track/captive-portal/
 fi
 
-# set up venv at deploy target if not present
+# set up venv and install/update dependencies
 if [ ! -d /opt/track/captive-portal/venv ]; then
     echo "Creating captive portal venv..."
     sudo python3 -m venv /opt/track/captive-portal/venv
-    sudo /opt/track/captive-portal/venv/bin/pip install --upgrade pip
-    sudo /opt/track/captive-portal/venv/bin/pip install -r /opt/track/captive-portal/requirements.txt
 fi
+echo "Installing captive portal dependencies..."
+sudo /opt/track/captive-portal/venv/bin/pip install --upgrade pip
+sudo /opt/track/captive-portal/venv/bin/pip install -r /opt/track/captive-portal/requirements.txt
 
 # install and enable systemd services
 echo "Installing systemd services..."

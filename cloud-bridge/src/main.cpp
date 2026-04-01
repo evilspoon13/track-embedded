@@ -45,7 +45,7 @@ int main() {
   sigaction(SIGTERM, &sa, nullptr);
 
   // pull from env, fall back to defaults if not
-  std::string url = get_env("CB_URL", "ws://localhost:9002");
+  std::string url = get_env("CB_URL", "ws://localhost:3000/ws/pi");
   std::string device_id = get_env("CB_DEVICE_ID", "dev-001");
   std::string device_secret = get_env("CB_DEVICE_SECRET", "");
 
