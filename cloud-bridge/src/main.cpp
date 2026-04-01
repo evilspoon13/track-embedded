@@ -45,7 +45,7 @@ int main() {
   sigaction(SIGTERM, &sa, nullptr);
 
   // pull from env, fall back to defaults if not
-  std::string url = get_env("CB_URL", "ws://localhost:3000/ws/pi");
+  std::string url = get_env("CB_URL", "wss://track-web.fly.dev/ws/pi");
   std::string device_id = get_env("CB_DEVICE_ID", "dev-001");
   std::string device_secret = get_env("CB_DEVICE_SECRET", "");
 
