@@ -17,6 +17,7 @@ sudo cp "$ROOT/can-reader/can-reader"         /opt/track/can-reader
 sudo cp "$ROOT/data-logger/data-logger"       /opt/track/data-logger
 sudo cp "$ROOT/graphics-engine/graphics-engine" /opt/track/graphics-engine/graphics-engine
 sudo cp "$ROOT/cloud-bridge/cloud-bridge"     /opt/track/cloud-bridge
+sudo cp "$ROOT/gps-reader/gps-reader"         /opt/track/gps-reader
 
 # copy graphics engine assets (fonts etc)
 if [ -d "$ROOT/graphics-engine/assets" ]; then
@@ -67,9 +68,10 @@ sudo systemctl enable \
     track-graphics \
     track-logger \
     track-cloud-bridge \
+    track-gps-reader \
     track-portal
 
 echo ""
 echo "=== Deploy complete ==="
 echo "Services enabled. They will start on next boot."
-echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-graphics track-logger track-portal track-cloud-bridge"
+echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-gps-reader track-graphics track-logger track-portal track-cloud-bridge"

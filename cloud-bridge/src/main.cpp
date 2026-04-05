@@ -7,7 +7,6 @@
  * @copyright   Texas A&M University
  */
 
-#include <chrono>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -24,6 +23,7 @@
 #include "log_uploader.hpp"
 #include "shared_memory.hpp"
 #include "telemetry_queue.hpp"
+#include "time_util.hpp"
 #include "ws_client.hpp"
 
 static volatile sig_atomic_t running = 1;
@@ -35,12 +35,6 @@ static void sighup_handler(int) { reload_flag = 1; }
 static std::string get_env(const char *name, const char *fallback) {
   const char *val = std::getenv(name);
   return val ? val : fallback;
-}
-
-static int64_t now_ms() {
-  return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::system_clock::now().time_since_epoch())
-      .count();
 }
 
 static constexpr const char *DEVICE_CONFIG_PATH = "/opt/track/config/device.json";
@@ -77,20 +71,13 @@ static DeviceIdentity read_device_config() {
   return id;
 }
 
-static void register_with_cloud(const std::string &base_url, const DeviceIdentity &id) {
+static void register_with_cloud(const std::string &api_url, const DeviceIdentity &id) {
   if (id.team_members.empty()) {
     printf("[register] no team members, skipping registration\n");
     return;
   }
 
-  // Derive HTTP URL from WebSocket URL
-  std::string http_url = base_url;
-  if (http_url.substr(0, 6) == "wss://") http_url = "https://" + http_url.substr(6);
-  else if (http_url.substr(0, 5) == "ws://") http_url = "http://" + http_url.substr(5);
-  // Strip /ws/pi path and replace with /api/devices/register
-  auto pos = http_url.find("/ws/");
-  if (pos != std::string::npos) http_url = http_url.substr(0, pos);
-  http_url += "/api/devices/register";
+  std::string url = api_url + "/api/devices/register";
 
   nlohmann::json body;
   body["teamMembers"] = id.team_members;
@@ -102,7 +89,7 @@ static void register_with_cloud(const std::string &base_url, const DeviceIdentit
   args->extraHeaders["Content-Type"] = "application/json";
   args->body = body.dump();
 
-  auto response = client.post(http_url, args->body, args);
+  auto response = client.post(url, args->body, args);
   if (response->statusCode == 200) {
     printf("device registered successfully\n");
   } else {
@@ -120,21 +107,21 @@ int main() {
   sa_hup.sa_handler = sighup_handler;
   sigaction(SIGHUP, &sa_hup, nullptr);
 
-  std::string url = get_env("CB_URL", "wss://track-web.fly.dev/ws/pi");
+  std::string ws_url = get_env("CB_URL", "wss://track-web.fly.dev/ws/pi");
+  std::string api_url = get_env("CB_API_URL", "https://track-web.fly.dev");
   DeviceIdentity device = read_device_config();
 
   constexpr int send_interval_ms = 50;
   constexpr int heartbeat_interval_ms = 1000;
 
   // reader of queue
-  TelemetryQueue *queue =
-      open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
+  TelemetryQueue *queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
   if (!queue) {
     std::perror("Failed to open shared memory queue");
     return 1;
   }
 
-  WsClient ws(url, device.device_id, device.device_secret);
+  WsClient ws(ws_url, device.device_id, device.device_secret);
 
   ConfigReceiver config_receiver("/tmp/graphics.json");
 
@@ -149,14 +136,14 @@ int main() {
 
   ws.start();
 
-  register_with_cloud(url, device);
+  register_with_cloud(api_url, device);
 
   std::size_t pos = queue->current_pos();
   std::unordered_map<std::string, double> signals;
   int64_t last_send_time = 0;
   int64_t last_heartbeat_time = 0;
 
-  printf("Cloud bridge started. url=%s device=%s\n", url.c_str(), device.device_id.c_str());
+  printf("Cloud bridge started. ws=%s api=%s device=%s\n", ws_url.c_str(), api_url.c_str(), device.device_id.c_str());
 
   while (running) {
     // SIGHUP: re-read device.json and re-register (triggered by captive portal)
@@ -164,7 +151,7 @@ int main() {
         reload_flag = 0;
         printf("reloading device.json\n");
         device = read_device_config();
-        register_with_cloud(url, device);
+        register_with_cloud(api_url, device);
     }
 
     std::size_t prev = pos;

@@ -5,7 +5,7 @@ export LDFLAGS  = -L/usr/local/lib -lrt -lpthread
 # Pass PLATFORM=DRM for headless Pi, defaults to X11
 export PLATFORM ?= X11
 
-SUBDIRS = can-reader data-logger graphics-engine cloud-bridge
+SUBDIRS = can-reader gps-reader data-logger graphics-engine cloud-bridge
 
 all: $(SUBDIRS)
 

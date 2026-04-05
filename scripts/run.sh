@@ -30,7 +30,13 @@ echo "Starting can-reader..."
 PIDS+=($!)
 sleep 0.5
 
-# 2. data-logger - reads from queue, writes logs
+# 2. gps-reader - reads GPS serial, writes to GPS shared memory queue
+echo "Starting gps-reader..."
+"$ROOT/gps-reader/gps-reader" &
+PIDS+=($!)
+sleep 0.5
+
+# 3. data-logger - reads from queue, writes logs
 echo "Starting data-logger..."
 "$ROOT/data-logger/data-logger" &
 PIDS+=($!)
