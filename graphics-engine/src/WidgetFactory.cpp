@@ -11,21 +11,6 @@
 #include <type_traits>
 #include <utility>
 
-static const char* unit_to_string(DataUnit unit) {
-    switch (unit) {
-        case DataUnit::Temperature: return "\xc2\xb0""C";  // UTF-8 °C
-        case DataUnit::Pressure:    return "psi";
-        case DataUnit::RPM:         return "RPM";
-        case DataUnit::Voltage:     return "V";
-        case DataUnit::Current:     return "A";
-        case DataUnit::Speed:       return "mph";
-        case DataUnit::Torque:      return "Nm";
-        case DataUnit::Power:       return "kW";
-        case DataUnit::Percent:     return "%";
-        default:                    return "";
-    }
-}
-
 static void fill_thresholds(GaugeThreshold* th, int& count, const DataConfig& d) {
     count = 3;
     th[0] = { (float)d.caution_threshold,  GREEN  };
@@ -59,7 +44,7 @@ std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
                     g.wTiles = wTiles; g.hTiles = hTiles;
                     g.minValue = (float)wc.data.min;
                     g.maxValue = (float)wc.data.max;
-                    g.units = unit_to_string(wc.data.unit);
+                    g.units = wc.data.unit;
                     fill_thresholds(g.thresholds, g.thresholdCount, wc.data);
                     lw.widget = g;
                     break;
@@ -70,7 +55,7 @@ std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
                     b.wTiles = wTiles; b.hTiles = hTiles;
                     b.minValue = (float)wc.data.min;
                     b.maxValue = (float)wc.data.max;
-                    b.units = unit_to_string(wc.data.unit);
+                    b.units = wc.data.unit;
                     fill_thresholds(b.thresholds, b.thresholdCount, wc.data);
                     lw.widget = b;
                     break;

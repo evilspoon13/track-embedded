@@ -30,28 +30,6 @@ static WidgetType parse_widget_type(std::string_view s) {
   throw std::invalid_argument("unknown widget type: " + std::string(s));
 }
 
-static DataUnit parse_data_unit(std::string_view s) {
-  if (s == "temperature")
-    return DataUnit::Temperature;
-  if (s == "pressure")
-    return DataUnit::Pressure;
-  if (s == "rpm")
-    return DataUnit::RPM;
-  if (s == "voltage")
-    return DataUnit::Voltage;
-  if (s == "current")
-    return DataUnit::Current;
-  if (s == "speed")
-    return DataUnit::Speed;
-  if (s == "torque")
-    return DataUnit::Torque;
-  if (s == "power")
-    return DataUnit::Power;
-  if (s == "percent")
-    return DataUnit::Percent;
-  throw std::invalid_argument("unknown data unit: " + std::string(s));
-}
-
 static nlohmann::json parse_json_file(const std::string &path) {
   std::ifstream f(path);
   if (!f.is_open())
@@ -81,7 +59,7 @@ DisplayConfig load_display_config(const std::string &path) {
       cfg.data.can_id = parse_can_id(d["can_id"].get<std::string>());
       cfg.data.can_id_label = d["can_id_label"];
       cfg.data.signal = d["signal"];
-      cfg.data.unit = parse_data_unit(d["unit"].get<std::string>());
+      cfg.data.unit = d["unit"].get<std::string>();
       cfg.data.min = d["min"];
       cfg.data.max = d["max"];
       cfg.data.caution_threshold = d["caution_threshold"];
