@@ -8,6 +8,7 @@
  */
 
 #include "WidgetFactory.h"
+#include "raylib.h"
 #include <type_traits>
 #include <utility>
 
@@ -91,6 +92,37 @@ std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
                     lw.widget = ind;
                     break;
                 }
+                case WidgetType::Graph: {
+                    GraphWidget g;
+                    g.gx = gx; g.gy = gy;
+                    g.wTiles = wTiles; g.hTiles = hTiles;
+                    g.yMin = (float)wc.data.min;
+                    g.yMax = (float)wc.data.max;
+                    g.yUnits = unit_to_string(wc.data.unit);
+
+                    const auto& gc = wc.graph.value();
+                    g.mode       = gc.mode;
+                    g.max_points = gc.max_points;
+
+                    if (gc.mode == GraphMode::TimeSeries) {
+                        g.window_seconds = gc.window_seconds;
+                        g.xMin   = 0.0f;
+                        g.xMax   = gc.window_seconds;
+                        g.xUnits = "s";
+                    } else {
+                        g.xMin   = (float)gc.x_min;
+                        g.xMax   = (float)gc.x_max;
+                        g.xUnits = unit_to_string(gc.x_unit);
+                        lw.x_can_id = gc.x_can_id;
+                        lw.x_signal = gc.x_signal;
+                    }
+
+                    // series[0] must exist before push_y/push_xy are called.
+                    g.series.emplace_back(GraphSeries{});
+
+                    lw.widget = g;
+                    break;
+                }
             }
 
             screen.widgets.push_back(std::move(lw));
@@ -109,8 +141,28 @@ void LiveWidget::set_value(double v) {
             w.value = static_cast<int>(v);
         } else if constexpr (std::is_same_v<T, IndicatorLight>) {
             w.on = (v != 0.0);
+        } else if constexpr (std::is_same_v<T, GraphWidget>) {
+            if (w.mode == GraphMode::TimeSeries) {
+                w.push_y(GetTime(), static_cast<float>(v));
+            } else {
+                w.pending_y     = static_cast<float>(v);
+                w.has_pending_y = true;
+                if (w.has_pending_x)
+                    w.push_xy(w.pending_x, w.pending_y);
+            }
         } else {
             w.value = static_cast<float>(v);
+        }
+    }, widget);
+}
+
+void LiveWidget::set_x_value(double v) {
+    std::visit([v](auto& w) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(w)>, GraphWidget>) {
+            w.pending_x     = static_cast<float>(v);
+            w.has_pending_x = true;
+            if (w.has_pending_y)
+                w.push_xy(w.pending_x, w.pending_y);
         }
     }, widget);
 }

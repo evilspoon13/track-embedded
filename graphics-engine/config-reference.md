@@ -64,6 +64,7 @@ Minimum sizes per widget type:
     bar       -- 2x3 tiles (minimum enforced by layout)
     number    -- 1x1 tiles
     indicator -- 1x1 tiles
+    graph     -- 5x3 tiles recommended
 
 Widgets do not clip each other — make sure positions do not overlap.
 
@@ -132,6 +133,32 @@ WIDGET TYPES
     warning, fan active, etc.).
     The "can_id_label" field sets the label text.
     Minimum size: 1x1 tile.
+
+"graph"
+    Time-series or X-Y line graph.
+
+    Time-series mode (mode: "time_series"):
+        Plots one CAN signal over a rolling time window. The x-axis
+        is wall-clock time (seconds since process start). The y-axis is
+        the signal value. The "data" block configures the y-axis signal,
+        range, and unit. The "graph" block sets window_seconds (how many
+        seconds of history to show) and max_points (ring buffer cap).
+
+    X-Y mode (mode: "xy"):
+        Plots one CAN signal against another. The "data" block configures
+        the y-axis signal. The "graph" block configures the x-axis signal
+        (x_can_id, x_signal, x_unit, x_min, x_max) and max_points.
+        x_unit is required in JSON for XY mode.
+
+    The "data" block always carries the y-axis signal (consistent with
+    all other widget types).
+
+    Points accumulate using a last-known-value strategy: a new point is
+    plotted whenever either axis receives a CAN update, using the most
+    recent value of the other axis.
+
+    Recommended size: 5x3 tiles or larger.
+    Graph history is cleared on SIGHUP hot-reload.
 
 
 FULL EXAMPLE
@@ -204,4 +231,58 @@ FULL EXAMPLE
             ]
         }
     ]
+}
+
+
+GRAPH WIDGET EXAMPLES
+---------------------
+
+Time-series (30-second rolling window):
+
+{
+    "type": "graph",
+    "alarm": false,
+    "position": { "x": 0, "y": 3, "width": 5, "height": 3 },
+    "data": {
+        "can_id": "0x100",
+        "can_id_label": "",
+        "signal": "motor_temp",
+        "unit": "temperature",
+        "min": 0,
+        "max": 150,
+        "caution_threshold": 0,
+        "critical_threshold": 0
+    },
+    "graph": {
+        "mode": "time_series",
+        "window_seconds": 30,
+        "max_points": 1000
+    }
+}
+
+X-Y (throttle percentage vs motor RPM):
+
+{
+    "type": "graph",
+    "alarm": false,
+    "position": { "x": 5, "y": 3, "width": 5, "height": 3 },
+    "data": {
+        "can_id": "0x200",
+        "can_id_label": "",
+        "signal": "motor_rpm",
+        "unit": "rpm",
+        "min": 0,
+        "max": 8000,
+        "caution_threshold": 0,
+        "critical_threshold": 0
+    },
+    "graph": {
+        "mode": "xy",
+        "max_points": 500,
+        "x_can_id": "0x100",
+        "x_signal": "throttle_pct",
+        "x_unit": "percent",
+        "x_min": 0,
+        "x_max": 100
+    }
 }

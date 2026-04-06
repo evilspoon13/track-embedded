@@ -22,6 +22,27 @@
                         "caution_threshold": 6000,
                         "critical_threshold": 7500
                     }
+                },
+                {
+                    "type" : "graph",
+                    "alarm" : false,
+                    "position" : { "x" : 3, "y" : 3, "width" : 5, "height" : 3},
+                    "data" : {
+                        "can_id": "0x100",
+                        "can_id_label": "RPM",
+                        "signal": "rpm",
+                        "unit": "rpm",
+                        "min": 0,
+                        "max": 8000,
+                        "caution_threshold": 6000,
+                        "critical_threshold": 7500
+
+                    },
+                    "graph": {
+                        "mode": "time_series",
+                        "window_seconds": 30,
+                        "max_points": 1000
+                    }
                 }
             ]
         },

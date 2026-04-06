@@ -27,6 +27,8 @@ static WidgetType parse_widget_type(std::string_view s) {
     return WidgetType::Number;
   if (s == "indicator")
     return WidgetType::Indicator;
+  if (s == "graph")
+    return WidgetType::Graph;
   throw std::invalid_argument("unknown widget type: " + std::string(s));
 }
 
@@ -52,6 +54,14 @@ static DataUnit parse_data_unit(std::string_view s) {
   throw std::invalid_argument("unknown data unit: " + std::string(s));
 }
 
+static GraphMode parse_graph_mode(std::string_view s) {
+  if (s == "time_series")
+    return GraphMode::TimeSeries;
+  if (s == "xy")
+    return GraphMode::XY;
+  throw std::invalid_argument("unknown graph mode: " + std::string(s));
+}
+
 static nlohmann::json parse_json_file(const std::string &path) {
   std::ifstream f(path);
   if (!f.is_open())
@@ -71,21 +81,42 @@ DisplayConfig load_display_config(const std::string &path) {
 
     for (const auto &w : screen["widgets"]) {
       WidgetConfig cfg;
-      cfg.type = parse_widget_type(w["type"].get<std::string>());
+      cfg.type  = parse_widget_type(w["type"].get<std::string>());
       cfg.alarm = w["alarm"];
 
       const auto &pos = w["position"];
       cfg.position = {pos["x"], pos["y"], pos["width"], pos["height"]};
 
       const auto &d = w["data"];
-      cfg.data.can_id = parse_can_id(d["can_id"].get<std::string>());
+      cfg.data.can_id       = parse_can_id(d["can_id"].get<std::string>());
       cfg.data.can_id_label = d["can_id_label"];
-      cfg.data.signal = d["signal"];
-      cfg.data.unit = parse_data_unit(d["unit"].get<std::string>());
-      cfg.data.min = d["min"];
-      cfg.data.max = d["max"];
-      cfg.data.caution_threshold = d["caution_threshold"];
+      cfg.data.signal       = d["signal"];
+      cfg.data.unit         = parse_data_unit(d["unit"].get<std::string>());
+      cfg.data.min              = d["min"];
+      cfg.data.max              = d["max"];
+      cfg.data.caution_threshold  = d["caution_threshold"];
       cfg.data.critical_threshold = d["critical_threshold"];
+
+      if (cfg.type == WidgetType::Graph) {
+        const auto &g = w["graph"];
+        GraphConfig gc;
+        gc.mode = parse_graph_mode(g["mode"].get<std::string>());
+
+        gc.max_points = g.value("max_points", 1000u);
+        if (gc.max_points < 1) gc.max_points = 1;
+
+        if (gc.mode == GraphMode::TimeSeries) {
+          gc.window_seconds = g.value("window_seconds", 30.0f);
+          if (gc.window_seconds <= 0.0f) gc.window_seconds = 1.0f;
+        } else {
+          gc.x_can_id = parse_can_id(g["x_can_id"].get<std::string>());
+          gc.x_signal = g["x_signal"];
+          gc.x_unit   = parse_data_unit(g["x_unit"].get<std::string>());
+          gc.x_min    = g["x_min"];
+          gc.x_max    = g["x_max"];
+        }
+        cfg.graph = gc;
+      }
 
       scr.widgets.emplace_back(cfg);
     }

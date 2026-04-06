@@ -15,11 +15,17 @@
 #include <vector>
 
 struct LiveWidget {
-    std::variant<NumberWidget, IndicatorLight, GaugeWidget, BarGraphWidget> widget;
-    uint32_t can_id;
+    std::variant<NumberWidget, IndicatorLight, GaugeWidget, BarGraphWidget, GraphWidget> widget;
+    uint32_t    can_id;
     std::string signal;
 
-    void set_value(double v);
+    // X-axis channel — only populated for XY-mode GraphWidgets.
+    // Defaults to 0/"" so the x-channel check in main.cpp is a no-op for all other widgets.
+    uint32_t    x_can_id = 0;
+    std::string x_signal = "";
+
+    void set_value(double v);      // y-axis / time-series update
+    void set_x_value(double v);    // XY x-axis update (no-op for non-graph widgets)
     void draw(const Font& font) const;
 };
 

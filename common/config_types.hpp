@@ -11,6 +11,7 @@
 #define TRACK_CONFIG_TYPES_HPP
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -43,9 +44,24 @@ using FrameMap = std::unordered_map<uint32_t, std::vector<ChannelConfig>>;
 
 // Display config types — mirrors graphics.types.ts
 
-enum class WidgetType { Gauge, Bar, Number, Indicator };
+enum class WidgetType { Gauge, Bar, Number, Indicator, Graph };
 
 enum class DataUnit { Temperature, Pressure, RPM, Voltage, Current, Speed, Torque, Power, Percent };
+
+enum class GraphMode { TimeSeries, XY };
+
+struct GraphConfig {
+    GraphMode    mode           = GraphMode::TimeSeries;
+    float        window_seconds = 30.0f;   // time-series only; must be > 0
+    uint32_t     max_points     = 1000;    // ring buffer cap; must be >= 1
+
+    // XY mode only — zero/empty defaults make x-channel check a no-op elsewhere
+    uint32_t    x_can_id = 0;
+    std::string x_signal = "";
+    DataUnit    x_unit   = DataUnit::Percent;
+    double      x_min    = 0.0;
+    double      x_max    = 100.0;
+};
 
 struct PositionConfig {
     int x;
@@ -66,10 +82,11 @@ struct DataConfig {
 };
 
 struct WidgetConfig {
-    WidgetType type;
-    bool alarm;
-    PositionConfig position;
-    DataConfig data;
+    WidgetType   type;
+    bool         alarm;
+    PositionConfig             position;
+    DataConfig                 data;
+    std::optional<GraphConfig> graph;   // populated only when type == Graph
 };
 
 struct ScreenConfig {

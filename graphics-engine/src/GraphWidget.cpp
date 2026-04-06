@@ -83,18 +83,18 @@ void GraphWidget::Draw(const Font &font) const {
     }
   }
 
-  if (showXUnits && xUnits && xUnits[0] != '\0') {
-    Vector2 sz = MeasureTextEx(font, xUnits, axisFs, spacingS);
+  if (showXUnits && !xUnits.empty()) {
+    Vector2 sz = MeasureTextEx(font, xUnits.c_str(), axisFs, spacingS);
     DrawTextEx(
-        font, xUnits,
+        font, xUnits.c_str(),
         {plotX + (plotW - sz.x) * 0.5f, lo.y + lo.h - sz.y - 6.0f * scale},
         axisFs, spacingS, textColor);
   }
 
-  if (showYUnits && yUnits && yUnits[0] != '\0') {
-    Vector2 sz = MeasureTextEx(font, yUnits, axisFs, spacingS);
+  if (showYUnits && !yUnits.empty()) {
+    Vector2 sz = MeasureTextEx(font, yUnits.c_str(), axisFs, spacingS);
     DrawTextPro(
-        font, yUnits,
+        font, yUnits.c_str(),
         {lo.x + sz.y + 4.0f * scale, plotY + plotH * 0.5f + sz.x * 0.5f},
         {0.0f, 0.0f}, -90.0f, axisFs, spacingS, textColor);
   }
@@ -116,4 +116,22 @@ void GraphWidget::Draw(const Font &font) const {
         DrawCircleLines((int)p.x, (int)p.y, r, m.color);
     }
   }
+}
+
+void GraphWidget::push_y(float t, float v) {
+    if (series.empty()) return;
+    auto& pts = series[0].points;
+    pts.push_back({t, v});
+    if (pts.size() > max_points)
+        pts.erase(pts.begin());
+    xMin = t - window_seconds;
+    xMax = t;
+}
+
+void GraphWidget::push_xy(float x, float y) {
+    if (series.empty()) return;
+    auto& pts = series[0].points;
+    pts.push_back({x, y});
+    if (pts.size() > max_points)
+        pts.erase(pts.begin());
 }

@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include "WidgetHelpers.h"
+#include "config_types.hpp"
 
 // Base grid tile (your screen is divisible into these)
 static constexpr float BASE_TILE = 80.0f;
@@ -235,8 +236,8 @@ struct GraphWidget
     float yMax = 100.0f;
 
     // Axis unit labels
-    const char* xUnits = "";
-    const char* yUnits = "";
+    std::string xUnits = "";
+    std::string yUnits = "";
 
     // Tick counts
     int xTickCount = 6;
@@ -274,6 +275,27 @@ struct GraphWidget
 
     // Data
     std::vector<GraphSeries> series;
+
+    // Graph mode and ring-buffer settings (set by WidgetFactory from config)
+    GraphMode mode           = GraphMode::TimeSeries;
+    float     window_seconds = 30.0f;
+    uint32_t  max_points     = 1000;
+
+    // XY pending state — last-known-value strategy.
+    // A point is committed whenever either axis receives a new value,
+    // using the most recent value of the other axis. This is intentional:
+    // CAN signals arrive at different rates; requiring both in the same
+    // frame would discard most data.
+    float pending_x     = 0.0f;
+    float pending_y     = 0.0f;
+    bool  has_pending_x = false;
+    bool  has_pending_y = false;
+
+    // Ring-buffer push methods — called from WidgetFactory::set_value / set_x_value.
+    // push_y: time-series mode, t = GetTime() (render thread only).
+    // push_xy: XY mode, commits a (x, y) point.
+    void push_y(float t, float v);
+    void push_xy(float x, float y);
 
     void Draw(const Font& font) const;
 };
