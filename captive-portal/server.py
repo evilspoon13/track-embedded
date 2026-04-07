@@ -10,6 +10,7 @@ import json
 import os
 import secrets
 import subprocess
+import struct
 import time
 import uuid
 from pathlib import Path
@@ -27,6 +28,10 @@ GRAPHICS_PATH = CONFIG_DIR / "graphics.json"
 DBC_PATH = CONFIG_DIR / "display.dbc"
 DEVICE_PATH = CONFIG_DIR / "device.json"
 UI_DIR = Path(__file__).resolve().parent / "ui"  # vite build output
+LOG_DIR = Path("/tmp/track-logs")
+LOG_ENTRY_SIZE = 24
+DEFAULT_LOG_LIMIT = 100
+MAX_LOG_LIMIT = 500
 
 app = Flask(
     __name__,
@@ -235,6 +240,43 @@ def config_to_dbc(config):
     return db.as_dbc_string()
 
 
+def read_dbc_frame_labels():
+    try:
+        raw = DBC_PATH.read_text()
+        config = parse_dbc_to_config(raw)
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return {}
+    except Exception:
+        return {}
+    return {
+        int(can_id_hex, 16): frame["can_id_label"]
+        for can_id_hex, frame in config.get("frames", {}).items()
+    }
+
+
+def iter_local_log_entries():
+    if not LOG_DIR.exists():
+        return
+
+    for path in sorted(LOG_DIR.glob("*.bin"), reverse=True):
+        session = path.stem
+        try:
+            with path.open("rb") as f:
+                while True:
+                    chunk = f.read(LOG_ENTRY_SIZE)
+                    if len(chunk) < LOG_ENTRY_SIZE:
+                        break
+                    ts, can_id, _pad, value = struct.unpack("<qIId", chunk)
+                    yield {
+                        "ts": ts,
+                        "can_id": can_id,
+                        "value": value,
+                        "session": session,
+                    }
+        except OSError:
+            continue
+
+
 def widget_to_api(w):
     """Convert stored widget (hex string can_id) to API format (integer can_id)."""
     w = dict(w)
@@ -388,6 +430,45 @@ def api_upload_dbc():
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
     return jsonify(config)
+
+
+# -- logs API (matches cloud backend shape) --
+
+@app.route("/api/logs", methods=["GET"])
+def api_get_logs():
+    limit_raw = request.args.get("limit", "")
+    try:
+        limit = min(int(limit_raw), MAX_LOG_LIMIT) if limit_raw else DEFAULT_LOG_LIMIT
+    except ValueError:
+        limit = DEFAULT_LOG_LIMIT
+
+    before_raw = request.args.get("before")
+    try:
+        before_ts = int(before_raw) if before_raw is not None else None
+    except ValueError:
+        before_ts = None
+
+    frame_labels = read_dbc_frame_labels()
+
+    filtered_entries = []
+    for entry in iter_local_log_entries() or ():
+        if before_ts is not None and entry["ts"] >= before_ts:
+            continue
+        filtered_entries.append({
+            **entry,
+            "frame_name": frame_labels.get(entry["can_id"]),
+        })
+
+    filtered_entries.sort(key=lambda entry: entry["ts"], reverse=True)
+    page = filtered_entries[:limit + 1]
+    has_more = len(page) > limit
+    page = page[:limit]
+    next_cursor = page[-1]["ts"] if has_more and page else None
+
+    return jsonify({
+        "entries": page,
+        "nextCursor": next_cursor,
+    })
 
 
 # -- live telemetry WebSocket --
