@@ -10,13 +10,16 @@ import json
 import os
 import secrets
 import subprocess
+import time
 import uuid
 from pathlib import Path
 
 import cantools
 from flask import Flask, request, jsonify, redirect, send_from_directory, render_template
+from flask_sock import Sock
 
 import wifi
+from shm_reader import create_reader
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
@@ -31,6 +34,7 @@ app = Flask(
     static_folder=str(Path(__file__).resolve().parent / "static"),
     static_url_path="/static",
 )
+sock = Sock(app)
 
 # -- captive portal detection --
 
@@ -384,6 +388,34 @@ def api_upload_dbc():
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
     return jsonify(config)
+
+
+# -- live telemetry WebSocket --
+
+_shm_reader = None
+
+def get_shared_reader():
+    global _shm_reader
+    if _shm_reader is None:
+        _shm_reader = create_reader()
+    return _shm_reader
+
+
+@sock.route("/ws/client")
+def telemetry_ws(ws):
+    reader = get_shared_reader()
+    if not reader:
+        ws.close(1011, "Shared memory not available")
+        return
+    pos = reader.current_pos()
+    try:
+        while True:
+            signals, pos = reader.consume(pos)
+            if signals:
+                ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
+            time.sleep(0.05)
+    except Exception:
+        return
 
 
 # -- device identity --
