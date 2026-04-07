@@ -97,6 +97,8 @@
         document.getElementById('password').focus();
     }
 
+    const CLOUD_URL = 'https://track-web-frontend.fly.dev/';
+
     async function connect() {
         const btn = document.getElementById('connect-btn');
         const password = document.getElementById('password').value;
@@ -111,17 +113,18 @@
             });
             const data = await res.json();
             if (data.ok) {
-                showAlert(data.message, 'success');
-                checkStatus();
+                showAlert('Connecting to ' + esc(selectedSsid) + '... Redirecting to cloud app.', 'success');
+                btn.innerHTML = '<span class="spinner"></span> Redirecting...';
+                setTimeout(() => { window.location.href = CLOUD_URL; }, 3000);
+                return;
             } else {
                 showAlert(data.message || data.error, 'error');
             }
         } catch (e) {
             showAlert('Request failed: ' + e.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Connect';
         }
+        btn.disabled = false;
+        btn.textContent = 'Connect';
     }
 
     async function checkStatus() {

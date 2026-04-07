@@ -125,8 +125,16 @@ def api_wifi_connect():
     password = data.get("password", "")
     if not ssid:
         return jsonify({"ok": False, "error": "SSID required"}), 400
-    ok, msg = wifi.connect(ssid, password)
-    return jsonify({"ok": ok, "message": msg})
+
+    # Connect after a delay so the response reaches the client before AP goes down
+    def deferred_connect():
+        import time
+        time.sleep(2)
+        wifi.connect(ssid, password)
+
+    import threading
+    threading.Thread(target=deferred_connect, daemon=True).start()
+    return jsonify({"ok": True, "message": f"Connecting to {ssid}..."})
 
 
 # -- config helpers --
