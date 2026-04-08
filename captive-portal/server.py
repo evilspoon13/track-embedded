@@ -115,11 +115,6 @@ def serve_spa(filename=""):
 
 # -- wifi API --
 
-@app.route("/api/wifi/scan")
-def api_wifi_scan():
-    return jsonify(wifi.scan_networks())
-
-
 @app.route("/api/wifi/status")
 def api_wifi_status():
     return jsonify(wifi.get_status())

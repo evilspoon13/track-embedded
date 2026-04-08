@@ -11,32 +11,6 @@ import re
 
 
 # WiFi management using nmcli, this is separate from server.py to keep subprocess calls isolated
-def scan_networks():
-    try:
-        result = subprocess.run(
-            ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY", "dev", "wifi", "list", "--rescan", "yes"],
-            capture_output=True, text=True, timeout=15,
-        )
-        networks = []
-        seen = set()
-        for line in result.stdout.strip().splitlines():
-            parts = line.split(":")
-            if len(parts) >= 3:
-                ssid = parts[0].strip()
-                if not ssid or ssid in seen:
-                    continue
-                seen.add(ssid)
-                networks.append({
-                    "ssid": ssid,
-                    "signal": int(parts[1]) if parts[1].isdigit() else 0,
-                    "security": parts[2] or "Open",
-                })
-        networks.sort(key=lambda n: n["signal"], reverse=True)
-        return networks
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return []
-
-
 def connect(ssid, password=""):
     try:
         cmd = ["nmcli", "dev", "wifi", "connect", ssid]
