@@ -14,16 +14,11 @@
         <div id="alert" class="alert"></div>
 
         <div class="card">
-            <div class="flex-between mb-1">
-                <h2>Available Networks</h2>
-                <button class="btn btn-sm btn-secondary" onclick="scan()">Scan</button>
+            <h2>Connect to Network</h2>
+            <div class="form-group">
+                <label for="ssid">Network Name (SSID)</label>
+                <input type="text" id="ssid" placeholder="Enter network name" autocomplete="off" autocapitalize="off">
             </div>
-            <div id="scan-status" class="text-sm text-dim">Scanning...</div>
-            <ul id="network-list" class="network-list"></ul>
-        </div>
-
-        <div id="connect-form" class="card hidden">
-            <h2>Connect to <span id="selected-ssid"></span></h2>
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" placeholder="Enter password (leave blank for open)">
@@ -38,8 +33,6 @@
     </div>
 
     <script>
-    let selectedSsid = '';
-
     function showAlert(msg, type) {
         const el = document.getElementById('alert');
         el.textContent = msg;
@@ -47,59 +40,18 @@
         setTimeout(() => el.classList.remove('show'), 5000);
     }
 
-    function signalBars(strength) {
-        const levels = [25, 50, 75, 100];
-        return levels.map((t, i) =>
-            '<span style="height:' + (4 + i * 4) + 'px" class="' + (strength >= t ? 'active' : '') + '"></span>'
-        ).join('');
-    }
-
-    async function scan() {
-        const list = document.getElementById('network-list');
-        const status = document.getElementById('scan-status');
-        list.innerHTML = '';
-        status.textContent = 'Scanning...';
-        status.classList.remove('hidden');
-
-        try {
-            const res = await fetch('/api/wifi/scan');
-            const networks = await res.json();
-            status.classList.add('hidden');
-
-            if (!networks.length) {
-                status.textContent = 'No networks found';
-                status.classList.remove('hidden');
-                return;
-            }
-
-            networks.forEach(n => {
-                const li = document.createElement('li');
-                li.className = 'network-item';
-                li.innerHTML =
-                    '<span class="network-ssid">' + esc(n.ssid) + '</span>' +
-                    '<span class="network-meta">' +
-                        '<span class="text-sm">' + esc(n.security) + '</span>' +
-                        '<span class="signal-bar">' + signalBars(n.signal) + '</span>' +
-                    '</span>';
-                li.onclick = () => selectNetwork(n.ssid);
-                list.appendChild(li);
-            });
-        } catch (e) {
-            status.textContent = 'Scan failed: ' + e.message;
-        }
-    }
-
-    function selectNetwork(ssid) {
-        selectedSsid = ssid;
-        document.getElementById('selected-ssid').textContent = ssid;
-        document.getElementById('connect-form').classList.remove('hidden');
-        document.getElementById('password').value = '';
-        document.getElementById('password').focus();
-    }
+    const CLOUD_URL = 'https://track-web-frontend.fly.dev/';
 
     async function connect() {
         const btn = document.getElementById('connect-btn');
+        const ssid = document.getElementById('ssid').value.trim();
         const password = document.getElementById('password').value;
+
+        if (!ssid) {
+            showAlert('Please enter a network name', 'error');
+            return;
+        }
+
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner"></span> Connecting...';
 
@@ -107,21 +59,22 @@
             const res = await fetch('/api/wifi/connect', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ssid: selectedSsid, password}),
+                body: JSON.stringify({ssid, password}),
             });
             const data = await res.json();
             if (data.ok) {
-                showAlert(data.message, 'success');
-                checkStatus();
+                showAlert('Connecting to ' + esc(ssid) + '... Redirecting to cloud app.', 'success');
+                btn.innerHTML = '<span class="spinner"></span> Redirecting...';
+                setTimeout(() => { window.location.href = CLOUD_URL; }, 3000);
+                return;
             } else {
                 showAlert(data.message || data.error, 'error');
             }
         } catch (e) {
             showAlert('Request failed: ' + e.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Connect';
         }
+        btn.disabled = false;
+        btn.textContent = 'Connect';
     }
 
     async function checkStatus() {
@@ -145,7 +98,14 @@
         return d.innerHTML;
     }
 
-    scan();
+    // Allow Enter key to submit
+    document.getElementById('password').addEventListener('keydown', e => {
+        if (e.key === 'Enter') connect();
+    });
+    document.getElementById('ssid').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('password').focus();
+    });
+
     checkStatus();
     </script>
 </body>

@@ -17,9 +17,9 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
-#include <ixwebsocket/IXHttpClient.h>
 
 #include "config_receiver.hpp"
+#include "device_sync.hpp"
 #include "log_uploader.hpp"
 #include "shared_memory.hpp"
 #include "telemetry_queue.hpp"
@@ -71,32 +71,6 @@ static DeviceIdentity read_device_config() {
   return id;
 }
 
-static void register_with_cloud(const std::string &api_url, const DeviceIdentity &id) {
-  if (id.team_members.empty()) {
-    printf("[register] no team members, skipping registration\n");
-    return;
-  }
-
-  std::string url = api_url + "/api/devices/register";
-
-  nlohmann::json body;
-  body["teamMembers"] = id.team_members;
-
-  ix::HttpClient client;
-  auto args = client.createRequest();
-  args->extraHeaders["X-Device-ID"] = id.device_id;
-  args->extraHeaders["X-Device-Secret"] = id.device_secret;
-  args->extraHeaders["Content-Type"] = "application/json";
-  args->body = body.dump();
-
-  auto response = client.post(url, args->body, args);
-  if (response->statusCode == 200) {
-    printf("device registered successfully\n");
-  } else {
-    printf("registration failed: %d %s\n", response->statusCode, response->body.c_str());
-  }
-}
-
 int main() {
   struct sigaction sa{};
   sa.sa_handler = signal_handler;
@@ -123,20 +97,25 @@ int main() {
 
   WsClient ws(ws_url, device.device_id, device.device_secret);
 
-  ConfigReceiver config_receiver("/tmp/graphics.json");
+  ConfigReceiver config_receiver("/opt/track/config/graphics.json");
 
   LogUploader log_uploader("/tmp/track-logs", ws, device.device_id);
 
   log_uploader.start();
 
-  ws.set_on_message([&config_receiver](const std::string &msg) {
-    printf("[config] received: %s\n", msg.c_str());
+  DeviceSync device_sync(DEVICE_CONFIG_PATH, api_url);
+
+  ws.set_on_message([&config_receiver, &device_sync, &device](const std::string &msg) {
+    printf("[ws] received: %s\n", msg.c_str());
+
+    if (device_sync.handleTeamMembersUpdate(msg, device.team_members)) return;
+
     config_receiver.ReceiveCallback(msg);
   });
 
   ws.start();
 
-  register_with_cloud(api_url, device);
+  device_sync.registerWithCloud(device.device_id, device.device_secret, device.team_members);
 
   std::size_t pos = queue->current_pos();
   std::unordered_map<std::string, double> signals;
@@ -151,7 +130,7 @@ int main() {
         reload_flag = 0;
         printf("reloading device.json\n");
         device = read_device_config();
-        register_with_cloud(api_url, device);
+        device_sync.registerWithCloud(device.device_id, device.device_secret, device.team_members);
     }
 
     std::size_t prev = pos;

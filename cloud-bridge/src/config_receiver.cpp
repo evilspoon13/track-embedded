@@ -47,12 +47,13 @@ void ConfigReceiver::ReceiveCallback(const std::string& msg) {
     }
 
     // write payload to config file
+    const auto& payload = j["payload"];
     std::ofstream f(config_path_);
     if (!f.is_open()) {
         printf("failed to write %s\n", config_path_.c_str());
         return;
     }
-    f << j["payload"].dump(2);
+    f << payload.dump(2);
     f.close();
 
     printf("wrote config to %s\n", config_path_.c_str());
