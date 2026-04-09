@@ -6,7 +6,18 @@ Before=track-can-reader.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/sbin/ip link set can0 up type can bitrate 500000
+EnvironmentFile=-/opt/track/config/track.env
+Environment=CAN_IFACE=can0
+Environment=CAN_MODE=can
+Environment=CAN_BITRATE=500000
+ExecStart=/bin/bash -lc '\
+    if [ "${CAN_MODE}" = "vcan" ]; then \
+        modprobe vcan; \
+        ip link add dev "${CAN_IFACE}" type vcan 2>/dev/null || true; \
+        ip link set "${CAN_IFACE}" up; \
+    else \
+        ip link set "${CAN_IFACE}" up type can bitrate "${CAN_BITRATE}"; \
+    fi'
 
 [Install]
 WantedBy=multi-user.target

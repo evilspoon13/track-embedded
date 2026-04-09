@@ -17,6 +17,7 @@ sudo cp "$ROOT/can-reader/can-reader"         /opt/track/can-reader
 sudo cp "$ROOT/data-logger/data-logger"       /opt/track/data-logger
 sudo cp "$ROOT/graphics-engine/graphics-engine" /opt/track/graphics-engine/graphics-engine
 sudo cp "$ROOT/cloud-bridge/cloud-bridge"     /opt/track/cloud-bridge
+sudo cp "$ROOT/gps-reader/gps-reader"         /opt/track/gps-reader
 
 # copy graphics engine assets (fonts etc)
 if [ -d "$ROOT/graphics-engine/assets" ]; then
@@ -25,8 +26,13 @@ fi
 
 # copy config files
 echo "Copying config..."
-sudo cp "$ROOT/config/graphics.json" /opt/track/config/graphics.json
-sudo cp "$ROOT/config/display.dbc"   /opt/track/config/display.dbc
+for cfg in graphics.json display.dbc track.env; do
+    if [ ! -f "/opt/track/config/$cfg" ]; then
+        sudo cp "$ROOT/config/$cfg" "/opt/track/config/$cfg"
+    else
+        echo "  Skipping $cfg (already exists)"
+    fi
+done
 
 # copy captive portal
 echo "Copying captive portal..."
@@ -41,13 +47,14 @@ if [ -d "$ROOT/captive-portal/ui" ]; then
     sudo cp -r "$ROOT/captive-portal/ui" /opt/track/captive-portal/
 fi
 
-# set up venv at deploy target if not present
+# set up venv and install/update dependencies
 if [ ! -d /opt/track/captive-portal/venv ]; then
     echo "Creating captive portal venv..."
     sudo python3 -m venv /opt/track/captive-portal/venv
-    sudo /opt/track/captive-portal/venv/bin/pip install --upgrade pip
-    sudo /opt/track/captive-portal/venv/bin/pip install -r /opt/track/captive-portal/requirements.txt
 fi
+echo "Installing captive portal dependencies..."
+sudo /opt/track/captive-portal/venv/bin/pip install --upgrade pip
+sudo /opt/track/captive-portal/venv/bin/pip install -r /opt/track/captive-portal/requirements.txt
 
 # install and enable systemd services
 echo "Installing systemd services..."
@@ -61,9 +68,10 @@ sudo systemctl enable \
     track-graphics \
     track-logger \
     track-cloud-bridge \
+    track-gps-reader \
     track-portal
 
 echo ""
 echo "=== Deploy complete ==="
 echo "Services enabled. They will start on next boot."
-echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-graphics track-logger track-portal"
+echo "To start now: sudo systemctl start track-setup track-can-interface track-can-reader track-gps-reader track-graphics track-logger track-portal track-cloud-bridge"

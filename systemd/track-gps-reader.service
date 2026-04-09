@@ -1,0 +1,14 @@
+[Unit]
+Description=TRACK GPS Reader
+After=network.target track-setup.service
+Requires=track-setup.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/opt/track/config/track.env
+ExecStart=/opt/track/gps-reader
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

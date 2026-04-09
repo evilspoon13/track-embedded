@@ -12,7 +12,6 @@
 
 WsClient::WsClient(const std::string& url, const std::string& device_id, const std::string& device_secret) {
 
-    // blalblaalbla
     ws_.setUrl(url);
 
     ix::WebSocketHttpHeaders headers;

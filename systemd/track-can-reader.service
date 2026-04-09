@@ -5,7 +5,8 @@ Requires=track-setup.service track-can-interface.service
 
 [Service]
 Type=simple
-ExecStart=/opt/track/can-reader can0
+EnvironmentFile=-/opt/track/config/track.env
+ExecStart=/opt/track/can-reader ${CAN_IFACE}
 Restart=on-failure
 RestartSec=1
 

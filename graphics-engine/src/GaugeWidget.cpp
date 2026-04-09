@@ -15,7 +15,7 @@ void GaugeWidget::Draw(const Font& font) const {
 
     Vector2 c = {lo.x + lo.w * 0.5f, lo.y + lo.h * 0.5f};
 
-    float safe   = lo.padS + lo.borderS + 12.0f * scale;
+    float safe   = lo.padS + lo.borderS + ringMargin * scale;
     float radius = fminf(lo.w, lo.h) * 0.5f - safe;
     if (radius < 1.0f) radius = 1.0f;
 
@@ -37,7 +37,7 @@ void GaugeWidget::Draw(const Font& font) const {
     int   nTicks     = validated_tick_count(tickCount);
     float tickOuter  = outerR - 2.0f * scale;
     float tickInner  = tickOuter - thick * 0.55f;
-    float tickFs     = 9.0f * scale;
+    float tickFs     = tickLabelSize * scale;
     float tickSpacing = 1.0f * scale;
 
     for (int i = 0; i < nTicks; i++) {
@@ -53,7 +53,7 @@ void GaugeWidget::Draw(const Font& font) const {
             float v   = minValue + (maxValue - minValue) * t;
             const char* s = TextFormat("%.0f", v);
             Vector2 sz    = MeasureTextEx(font, s, tickFs, tickSpacing);
-            float labelR  = tickOuter + 8.0f * scale;
+            float labelR  = tickOuter + tickLabelOffset * scale;
             Vector2 lp    = {c.x + cosf(angRad) * labelR, c.y + sinf(angRad) * labelR};
             DrawTextEx(font, s, {lp.x - sz.x * 0.5f, lp.y - sz.y * 0.5f}, tickFs, tickSpacing, tickColor);
         }

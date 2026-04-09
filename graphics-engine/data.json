@@ -1,98 +1,76 @@
 {
     "screens": [
         {
-            "name": "RPM",
+            "name": "Screen 1",
+            "updatedAt": "2026-04-08T17:40:32-05:00",
             "widgets": [
                 {
-                    "type": "number",
                     "alarm": false,
-                    "position": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 2,
-                        "height": 2
-                    },
                     "data": {
-                        "can_id": "0x100",
-                        "can_id_label": "RPM",
-                        "signal": "rpm",
-                        "unit": "rpm",
+                        "can_id": "256",
+                        "can_id_label": "my_id",
+                        "caution_threshold": 0,
+                        "critical_threshold": 0,
+                        "max": 100,
                         "min": 0,
-                        "max": 8000,
-                        "caution_threshold": 6000,
-                        "critical_threshold": 7500
-                    }
+                        "signal": "SIGNAL_1",
+                        "unit": "rpm"
+                    },
+                    "position": {
+                        "height": 1,
+                        "width": 2,
+                        "x": 3,
+                        "y": 2
+                    },
+                    "type": "number"
                 },
                 {
-                    "type" : "graph",
-                    "alarm" : false,
-                    "position" : { "x" : 3, "y" : 3, "width" : 5, "height" : 3},
-                    "data" : {
-                        "can_id": "0x100",
-                        "can_id_label": "RPM",
-                        "signal": "rpm",
-                        "unit": "rpm",
+                    "alarm": false,
+                    "data": {
+                        "can_id": "256",
+                        "can_id_label": "my_id",
+                        "caution_threshold": 0,
+                        "critical_threshold": 0,
+                        "max": 100,
                         "min": 0,
-                        "max": 8000,
-                        "caution_threshold": 6000,
-                        "critical_threshold": 7500
-
+                        "signal": "SIGNAL_2",
+                        "unit": "unit"
+                    },
+                    "position": {
+                        "height": 1,
+                        "width": 2,
+                        "x": 5,
+                        "y": 2
+                    },
+                    "type": "number"
+                },
+                {
+                    "alarm": false,
+                    "data": {
+                        "can_id": "256",
+                        "can_id_label": "my_id",
+                        "caution_threshold": 80,
+                        "critical_threshold": 80,
+                        "max": 100,
+                        "min": 0,
+                        "signal": "SIGNAL_1",
+                        "unit": "speed"
                     },
                     "graph": {
-                        "mode": "time_series",
-                        "window_seconds": 30,
-                        "max_points": 1000
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Voltage",
-            "widgets": [
-                {
-                    "type": "number",
-                    "alarm": false,
-                    "position": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 2,
-                        "height": 2
+                        "max_points": 1000,
+                        "mode": "xy",
+                        "x_can_id": "256",
+                        "x_max": 80,
+                        "x_min": 0,
+                        "x_unit": "pressure"
                     },
-                    "data": {
-                        "can_id": "0x101",
-                        "can_id_label": "Voltage",
-                        "signal": "voltage",
-                        "unit": "voltage",
-                        "min": 0,
-                        "max": 400,
-                        "caution_threshold": 300,
-                        "critical_threshold": 350
-                    }
-                }
-            ]
-        },
-        {
-            "name": "Temp",
-            "widgets": [
-                {
-                    "type": "number",
-                    "alarm": false,
                     "position": {
-                        "x": 0,
-                        "y": 0,
-                        "width": 2,
-                        "height": 2
+                        "height": 2,
+                        "width": 4,
+                        "x": 4,
+                        "y": 3
                     },
-                    "data": {
-                        "can_id": "0x102",
-                        "can_id_label": "Temp",
-                        "signal": "temp",
-                        "unit": "temperature",
-                        "min": 0,
-                        "max": 120,
-                        "caution_threshold": 90,
-                        "critical_threshold": 105
-                    }
+                    "type": "graph"
                 }
             ]
         }

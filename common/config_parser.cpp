@@ -81,20 +81,20 @@ DisplayConfig load_display_config(const std::string &path) {
 
     for (const auto &w : screen["widgets"]) {
       WidgetConfig cfg;
-      cfg.type  = parse_widget_type(w["type"].get<std::string>());
+      cfg.type = parse_widget_type(w["type"].get<std::string>());
       cfg.alarm = w["alarm"];
 
       const auto &pos = w["position"];
       cfg.position = {pos["x"], pos["y"], pos["width"], pos["height"]};
 
       const auto &d = w["data"];
-      cfg.data.can_id       = parse_can_id(d["can_id"].get<std::string>());
+      cfg.data.can_id = parse_can_id(d["can_id"].get<std::string>());
       cfg.data.can_id_label = d["can_id_label"];
-      cfg.data.signal       = d["signal"];
-      cfg.data.unit         = parse_data_unit(d["unit"].get<std::string>());
-      cfg.data.min              = d["min"];
-      cfg.data.max              = d["max"];
-      cfg.data.caution_threshold  = d["caution_threshold"];
+      cfg.data.signal = d["signal"];
+      cfg.data.unit = d["unit"].get<std::string>();
+      cfg.data.min = d["min"];
+      cfg.data.max = d["max"];
+      cfg.data.caution_threshold = d["caution_threshold"];
       cfg.data.critical_threshold = d["critical_threshold"];
 
       if (cfg.type == WidgetType::Graph) {
@@ -103,17 +103,19 @@ DisplayConfig load_display_config(const std::string &path) {
         gc.mode = parse_graph_mode(g["mode"].get<std::string>());
 
         gc.max_points = g.value("max_points", 1000u);
-        if (gc.max_points < 1) gc.max_points = 1;
+        if (gc.max_points < 1)
+          gc.max_points = 1;
 
         if (gc.mode == GraphMode::TimeSeries) {
           gc.window_seconds = g.value("window_seconds", 30.0f);
-          if (gc.window_seconds <= 0.0f) gc.window_seconds = 1.0f;
+          if (gc.window_seconds <= 0.0f)
+            gc.window_seconds = 1.0f;
         } else {
           gc.x_can_id = parse_can_id(g["x_can_id"].get<std::string>());
           gc.x_signal = g["x_signal"];
-          gc.x_unit   = parse_data_unit(g["x_unit"].get<std::string>());
-          gc.x_min    = g["x_min"];
-          gc.x_max    = g["x_max"];
+          gc.x_unit = g["x_unit"].get<std::string>();
+          gc.x_min = g["x_min"];
+          gc.x_max = g["x_max"];
         }
         cfg.graph = gc;
       }

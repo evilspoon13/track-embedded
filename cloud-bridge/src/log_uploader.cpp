@@ -8,7 +8,6 @@
 
 #include "log_uploader.hpp"
 
-#include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <string>
@@ -17,12 +16,9 @@
 #include <ixwebsocket/IXBase64.h>
 #include <nlohmann/json.hpp>
 
-static constexpr size_t CHUNK_SIZE = 65536; // 64 KB
+#include "time_util.hpp"
 
-static int64_t now_ms() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
-}
+static constexpr size_t CHUNK_SIZE = 65536; // 64 KB
 
 LogUploader::LogUploader(const std::string& log_dir, WsClient& ws, const std::string& device_id)
     : log_dir_(log_dir), ws_(ws), device_id_(device_id) {}

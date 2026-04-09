@@ -12,161 +12,161 @@
 #include <type_traits>
 #include <utility>
 
-static const char* unit_to_string(DataUnit unit) {
-    switch (unit) {
-        case DataUnit::Temperature: return "\xc2\xb0""C";  // UTF-8 °C
-        case DataUnit::Pressure:    return "psi";
-        case DataUnit::RPM:         return "RPM";
-        case DataUnit::Voltage:     return "V";
-        case DataUnit::Current:     return "A";
-        case DataUnit::Speed:       return "mph";
-        case DataUnit::Torque:      return "Nm";
-        case DataUnit::Power:       return "kW";
-        case DataUnit::Percent:     return "%";
-        default:                    return "";
-    }
+static void fill_thresholds(GaugeThreshold *th, int &count,
+                            const DataConfig &d) {
+  count = 3;
+  th[0] = {(float)d.caution_threshold, GREEN};
+  th[1] = {(float)d.critical_threshold, YELLOW};
+  th[2] = {(float)d.max, RED};
 }
 
-static void fill_thresholds(GaugeThreshold* th, int& count, const DataConfig& d) {
-    count = 3;
-    th[0] = { (float)d.caution_threshold,  GREEN  };
-    th[1] = { (float)d.critical_threshold, YELLOW };
-    th[2] = { (float)d.max,                RED    };
-}
+std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
+  std::vector<LiveScreen> result;
+  result.reserve(config.screens.size());
 
-std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
-    std::vector<LiveScreen> result;
-    result.reserve(config.screens.size());
+  for (const auto &screen_cfg : config.screens) {
+    LiveScreen screen;
+    screen.name = screen_cfg.name;
+    screen.widgets.reserve(screen_cfg.widgets.size());
 
-    for (const auto& screen_cfg : config.screens) {
-        LiveScreen screen;
-        screen.name = screen_cfg.name;
-        screen.widgets.reserve(screen_cfg.widgets.size());
+    for (const auto &wc : screen_cfg.widgets) {
+      LiveWidget lw;
+      lw.can_id = wc.data.can_id;
+      lw.signal = wc.data.signal;
 
-        for (const auto& wc : screen_cfg.widgets) {
-            LiveWidget lw;
-            lw.can_id = wc.data.can_id;
-            lw.signal = wc.data.signal;
+      int gx = wc.position.x;
+      int gy = wc.position.y;
+      int wTiles = wc.position.width;
+      int hTiles = wc.position.height;
 
-            int gx     = wc.position.x;
-            int gy     = wc.position.y;
-            int wTiles = wc.position.width;
-            int hTiles = wc.position.height;
+      switch (wc.type) {
+      case WidgetType::Gauge: {
+        GaugeWidget g;
+        g.gx = gx;
+        g.gy = gy;
+        g.wTiles = wTiles;
+        g.hTiles = hTiles;
+        g.minValue = (float)wc.data.min;
+        g.maxValue = (float)wc.data.max;
+        g.units = wc.data.unit;
+        fill_thresholds(g.thresholds, g.thresholdCount, wc.data);
+        lw.widget = g;
+        break;
+      }
+      case WidgetType::Bar: {
+        BarGraphWidget b;
+        b.gx = gx;
+        b.gy = gy;
+        b.wTiles = wTiles;
+        b.hTiles = hTiles;
+        b.minValue = (float)wc.data.min;
+        b.maxValue = (float)wc.data.max;
+        b.units = wc.data.unit;
+        fill_thresholds(b.thresholds, b.thresholdCount, wc.data);
+        lw.widget = b;
+        break;
+      }
+      case WidgetType::Number: {
+        NumberWidget n;
+        n.gx = gx;
+        n.gy = gy;
+        n.wTiles = wTiles;
+        n.hTiles = hTiles;
+        n.label = wc.data.can_id_label;
+        lw.widget = n;
+        break;
+      }
+      case WidgetType::Indicator: {
+        IndicatorLight ind;
+        ind.gx = gx;
+        ind.gy = gy;
+        ind.wTiles = wTiles;
+        ind.hTiles = hTiles;
+        ind.label = wc.data.can_id_label;
+        lw.widget = ind;
+        break;
+      }
+      case WidgetType::Graph: {
+        GraphWidget g;
+        g.gx = gx;
+        g.gy = gy;
+        g.wTiles = wTiles;
+        g.hTiles = hTiles;
+        g.yMin = (float)wc.data.min;
+        g.yMax = (float)wc.data.max;
+        g.yUnits = wc.data.unit;
 
-            switch (wc.type) {
-                case WidgetType::Gauge: {
-                    GaugeWidget g;
-                    g.gx = gx; g.gy = gy;
-                    g.wTiles = wTiles; g.hTiles = hTiles;
-                    g.minValue = (float)wc.data.min;
-                    g.maxValue = (float)wc.data.max;
-                    g.units = unit_to_string(wc.data.unit);
-                    fill_thresholds(g.thresholds, g.thresholdCount, wc.data);
-                    lw.widget = g;
-                    break;
-                }
-                case WidgetType::Bar: {
-                    BarGraphWidget b;
-                    b.gx = gx; b.gy = gy;
-                    b.wTiles = wTiles; b.hTiles = hTiles;
-                    b.minValue = (float)wc.data.min;
-                    b.maxValue = (float)wc.data.max;
-                    b.units = unit_to_string(wc.data.unit);
-                    fill_thresholds(b.thresholds, b.thresholdCount, wc.data);
-                    lw.widget = b;
-                    break;
-                }
-                case WidgetType::Number: {
-                    NumberWidget n;
-                    n.gx = gx; n.gy = gy;
-                    n.wTiles = wTiles; n.hTiles = hTiles;
-                    n.label = wc.data.can_id_label;
-                    lw.widget = n;
-                    break;
-                }
-                case WidgetType::Indicator: {
-                    IndicatorLight ind;
-                    ind.gx = gx; ind.gy = gy;
-                    ind.wTiles = wTiles; ind.hTiles = hTiles;
-                    ind.label = wc.data.can_id_label;
-                    lw.widget = ind;
-                    break;
-                }
-                case WidgetType::Graph: {
-                    GraphWidget g;
-                    g.gx = gx; g.gy = gy;
-                    g.wTiles = wTiles; g.hTiles = hTiles;
-                    g.yMin = (float)wc.data.min;
-                    g.yMax = (float)wc.data.max;
-                    g.yUnits = unit_to_string(wc.data.unit);
+        const auto &gc = wc.graph.value();
+        g.mode = gc.mode;
+        g.max_points = gc.max_points;
 
-                    const auto& gc = wc.graph.value();
-                    g.mode       = gc.mode;
-                    g.max_points = gc.max_points;
-
-                    if (gc.mode == GraphMode::TimeSeries) {
-                        g.window_seconds = gc.window_seconds;
-                        g.xMin   = 0.0f;
-                        g.xMax   = gc.window_seconds;
-                        g.xUnits = "s";
-                    } else {
-                        g.xMin   = (float)gc.x_min;
-                        g.xMax   = (float)gc.x_max;
-                        g.xUnits = unit_to_string(gc.x_unit);
-                        lw.x_can_id = gc.x_can_id;
-                        lw.x_signal = gc.x_signal;
-                    }
-
-                    // series[0] must exist before push_y/push_xy are called.
-                    g.series.emplace_back(GraphSeries{});
-
-                    lw.widget = g;
-                    break;
-                }
-            }
-
-            screen.widgets.push_back(std::move(lw));
+        if (gc.mode == GraphMode::TimeSeries) {
+          g.window_seconds = gc.window_seconds;
+          g.xMin = 0.0f;
+          g.xMax = gc.window_seconds;
+          g.xUnits = "s";
+        } else {
+          g.xMin = (float)gc.x_min;
+          g.xMax = (float)gc.x_max;
+          g.xUnits = gc.x_unit;
+          lw.x_can_id = gc.x_can_id;
+          lw.x_signal = gc.x_signal;
         }
 
-        result.push_back(std::move(screen));
+        // series[0] must exist before push_y/push_xy are called.
+        g.series.emplace_back(GraphSeries{});
+
+        lw.widget = g;
+        break;
+      }
+      }
+
+      screen.widgets.push_back(std::move(lw));
     }
 
-    return result;
+    result.push_back(std::move(screen));
+  }
+
+  return result;
 }
 
 void LiveWidget::set_value(double v) {
-    std::visit([v](auto& w) {
+  std::visit(
+      [v](auto &w) {
         using T = std::decay_t<decltype(w)>;
         if constexpr (std::is_same_v<T, NumberWidget>) {
-            w.value = static_cast<int>(v);
+          w.value = static_cast<int>(v);
         } else if constexpr (std::is_same_v<T, IndicatorLight>) {
-            w.on = (v != 0.0);
+          w.on = (v != 0.0);
         } else if constexpr (std::is_same_v<T, GraphWidget>) {
-            if (w.mode == GraphMode::TimeSeries) {
-                w.push_y(GetTime(), static_cast<float>(v));
-            } else {
-                w.pending_y     = static_cast<float>(v);
-                w.has_pending_y = true;
-                if (w.has_pending_x)
-                    w.push_xy(w.pending_x, w.pending_y);
-            }
+          if (w.mode == GraphMode::TimeSeries) {
+            w.push_y(GetTime(), static_cast<float>(v));
+          } else {
+            w.pending_y = static_cast<float>(v);
+            w.has_pending_y = true;
+            if (w.has_pending_x)
+              w.push_xy(w.pending_x, w.pending_y);
+          }
         } else {
-            w.value = static_cast<float>(v);
+          w.value = static_cast<float>(v);
         }
-    }, widget);
+      },
+      widget);
 }
 
 void LiveWidget::set_x_value(double v) {
-    std::visit([v](auto& w) {
+  std::visit(
+      [v](auto &w) {
         if constexpr (std::is_same_v<std::decay_t<decltype(w)>, GraphWidget>) {
-            w.pending_x     = static_cast<float>(v);
-            w.has_pending_x = true;
-            if (w.has_pending_y)
-                w.push_xy(w.pending_x, w.pending_y);
+          w.pending_x = static_cast<float>(v);
+          w.has_pending_x = true;
+          if (w.has_pending_y)
+            w.push_xy(w.pending_x, w.pending_y);
         }
-    }, widget);
+      },
+      widget);
 }
 
-void LiveWidget::draw(const Font& font) const {
-    std::visit([&font](const auto& w) { w.Draw(font); }, widget);
+void LiveWidget::draw(const Font &font) const {
+  std::visit([&font](const auto &w) { w.Draw(font); }, widget);
 }

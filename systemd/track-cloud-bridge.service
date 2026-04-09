@@ -7,8 +7,8 @@ Requires=track-can-reader.service
 [Service]
 Type=simple
 ExecStart=/opt/track/cloud-bridge
-Environment=CB_URL=ws://localhost:9002
-Environment=CB_DEVICE_ID=dev-001
+Environment=CB_URL=wss://track-web.fly.dev/ws/pi
+Environment=CB_API_URL=https://track-web.fly.dev
 Restart=on-failure
 RestartSec=5
 
