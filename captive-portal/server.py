@@ -20,7 +20,7 @@ from flask import Flask, request, jsonify, redirect, send_from_directory, render
 from flask_sock import Sock
 
 import wifi
-from shm_reader import create_reader
+from shm_reader import create_telemetry_reader, create_gps_reader
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
@@ -468,27 +468,41 @@ def api_get_logs():
 
 # -- live telemetry WebSocket --
 
-_shm_reader = None
+_tel_reader = None
+_gps_reader = None
 
-def get_shared_reader():
-    global _shm_reader
-    if _shm_reader is None:
-        _shm_reader = create_reader()
-    return _shm_reader
+def get_telemetry_reader():
+    global _tel_reader
+    if _tel_reader is None:
+        _tel_reader = create_telemetry_reader()
+    return _tel_reader
+
+def get_gps_reader():
+    global _gps_reader
+    if _gps_reader is None:
+        _gps_reader = create_gps_reader()
+    return _gps_reader
 
 
 @sock.route("/ws/client")
 def telemetry_ws(ws):
-    reader = get_shared_reader()
-    if not reader:
+    tel = get_telemetry_reader()
+    gps = get_gps_reader()
+    if not tel and not gps:
         ws.close(1011, "Shared memory not available")
         return
-    pos = reader.current_pos()
+    tel_pos = tel.current_pos() if tel else 0
+    gps_pos = gps.current_pos() if gps else 0
     try:
         while True:
-            signals, pos = reader.consume(pos)
-            if signals:
-                ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
+            if tel:
+                signals, tel_pos = tel.consume(tel_pos)
+                if signals:
+                    ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
+            if gps:
+                gps_data, gps_pos = gps.consume(gps_pos)
+                if gps_data:
+                    ws.send(json.dumps({"type": "GPS", "payload": gps_data}))
             time.sleep(0.05)
     except Exception:
         return
