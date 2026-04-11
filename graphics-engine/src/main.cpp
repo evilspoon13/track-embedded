@@ -47,18 +47,13 @@ static void handle_screen_navigation(const std::vector<LiveScreen>& screens, std
 
 #ifdef PLATFORM_DRM
   buttons.update();
-  bool next = IsKeyPressed(KEY_RIGHT) || buttons.pressed_up();
-  bool prev = IsKeyPressed(KEY_LEFT)  || buttons.pressed_down();
+  bool move = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_LEFT) || buttons.pressed_move();
 #else
-  bool next = IsKeyPressed(KEY_RIGHT);
-  bool prev = IsKeyPressed(KEY_LEFT);
+  bool move = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_LEFT);
 #endif
 
-  if (next) {
+  if (move) {
     active_screen = (active_screen + 1) % screens.size();
-  }
-  if (prev) {
-    active_screen = (active_screen + screens.size() - 1) % screens.size();
   }
 }
 
