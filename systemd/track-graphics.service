@@ -1,13 +1,13 @@
 [Unit]
 Description=TRACK Graphics Engine
-After=track-can-reader.service
+After=track-can-reader.service track-gpio.service
 Requires=track-can-reader.service
 
 [Service]
 Type=simple
 WorkingDirectory=/opt/track/graphics-engine
 ExecStart=/opt/track/graphics-engine/graphics-engine /opt/track/config/graphics.json
-SupplementaryGroups=video render gpio
+SupplementaryGroups=video render
 Restart=on-failure
 RestartSec=1
 

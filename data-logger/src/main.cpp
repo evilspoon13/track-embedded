@@ -14,10 +14,24 @@
 #include "shared_memory.hpp"
 #include "log_writer.hpp"
 
-static volatile sig_atomic_t running = 1;
+static constexpr const char* PIDFILE = "/run/track/logger.pid";
 
-static void signal_handler(int) {
-    running = 0;
+static volatile sig_atomic_t running = 1;
+static volatile sig_atomic_t toggle_flag = 0;
+
+static void signal_handler(int) { running = 0; }
+static void sigusr1_handler(int) { toggle_flag = 1; }
+
+static void write_pidfile() {
+    FILE* f = fopen(PIDFILE, "w");
+    if (f) {
+        fprintf(f, "%d\n", getpid());
+        fclose(f);
+    }
+}
+
+static void remove_pidfile() {
+    unlink(PIDFILE);
 }
 
 int main() {
@@ -26,33 +40,60 @@ int main() {
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
+    struct sigaction sa_usr{};
+    sa_usr.sa_handler = sigusr1_handler;
+    sigaction(SIGUSR1, &sa_usr, nullptr);
+
+    write_pidfile();
+
     TelemetryQueue* queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
     if (!queue) {
         std::perror("Failed to open shared memory queue");
+        remove_pidfile();
         return 1;
     }
 
     LogWriter writer;
-    if (!writer.is_open()) {
-        close_shared_queue(queue, TELEMETRY_SHM, false);
-        return 1;
-    }
+    bool recording = false;
 
     std::size_t pos = queue->current_pos();
-    printf("Data logger started. waiting for telemetry..\n");
+    printf("Data logger started. Press log button to begin recording.\n");
 
     while (running) {
+        if (toggle_flag) {
+            toggle_flag = 0;
+            recording = !recording;
+            if (recording) {
+                writer.open();
+                printf("Recording started\n");
+            } else {
+                writer.close();
+                printf("Recording stopped\n");
+            }
+        }
+
         std::size_t prev = pos;
-        queue->consume(pos, [&](const TelemetryMessage& msg) {
-            writer.write(msg.can_id, msg.value);
-        });
-        if (pos == prev) {
-            usleep(1000); // 1ms sleep when idle
+        if (recording) {
+            queue->consume(pos, [&](const TelemetryMessage& msg) {
+                writer.write(msg.can_id, msg.value);
+            });
         } else {
+            // drain queue to stay current even when not recording
+            queue->consume(pos, [](const TelemetryMessage&) {});
+        }
+
+        if (pos == prev) {
+            usleep(1000);
+        } else if (recording) {
             writer.flush();
         }
     }
 
+    if (recording) {
+        writer.close();
+    }
+
     close_shared_queue(queue, TELEMETRY_SHM, false);
+    remove_pidfile();
     return 0;
 }

@@ -6,7 +6,7 @@ PLATFORM ?= X11
 
 ifeq ($(PLATFORM), DRM)
     CXXFLAGS += -DPLATFORM_DRM
-    LDFLAGS = -lrt -lpthread -lraylib -ldrm -lgbm -lEGL -lGLESv2 -lgpiod -lm
+    LDFLAGS = -lrt -lpthread -lraylib -ldrm -lgbm -lEGL -lGLESv2 -lm
 else
     LDFLAGS = -lrt -lpthread -lraylib -lX11 -lm
 endif

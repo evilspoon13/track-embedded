@@ -31,6 +31,8 @@ public:
     LogWriter& operator=(const LogWriter&) = delete;
 
     bool is_open() const;
+    void open();
+    void close();
     void write(uint32_t can_id, double value);
     void flush();
 

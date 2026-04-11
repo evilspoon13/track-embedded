@@ -18,6 +18,7 @@ sudo cp "$ROOT/data-logger/data-logger"       /opt/track/data-logger
 sudo cp "$ROOT/graphics-engine/graphics-engine" /opt/track/graphics-engine/graphics-engine
 sudo cp "$ROOT/cloud-bridge/cloud-bridge"     /opt/track/cloud-bridge
 sudo cp "$ROOT/gps-reader/gps-reader"         /opt/track/gps-reader
+sudo cp "$ROOT/gpio-reader/gpio-reader"       /opt/track/gpio-reader
 
 # copy graphics engine assets (fonts etc)
 if [ -d "$ROOT/graphics-engine/assets" ]; then
@@ -69,6 +70,7 @@ sudo systemctl enable \
     track-logger \
     track-cloud-bridge \
     track-gps-reader \
+    track-gpio \
     track-portal
 
 echo ""

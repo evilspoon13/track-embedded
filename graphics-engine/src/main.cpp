@@ -15,18 +15,31 @@
 #include "telemetry_queue.hpp"
 #include "shared_memory.hpp"
 
-#ifdef PLATFORM_DRM
-#include "gpio_input.hpp"
-#endif
-
 #include <cmath>
 #include <csignal>
 #include <cstdio>
 #include <string>
+#include <unistd.h>
+
+static constexpr const char* PIDFILE = "/run/track/graphics.pid";
 
 static volatile sig_atomic_t reload_flag = 0;
+static volatile sig_atomic_t screen_move_flag = 0;
 
 static void sighup_handler(int) { reload_flag = 1; }
+static void sigusr1_handler(int) { screen_move_flag = 1; }
+
+static void write_pidfile() {
+    FILE* f = fopen(PIDFILE, "w");
+    if (f) {
+        fprintf(f, "%d\n", getpid());
+        fclose(f);
+    }
+}
+
+static void remove_pidfile() {
+    unlink(PIDFILE);
+}
 
 static void update_all_screens(std::vector<LiveScreen>& screens, const TelemetryMessage& msg) {
   for (auto& screen : screens) {
@@ -38,19 +51,15 @@ static void update_all_screens(std::vector<LiveScreen>& screens, const Telemetry
   }
 }
 
-static void handle_screen_navigation(const std::vector<LiveScreen>& screens, std::size_t& active_screen
-#ifdef PLATFORM_DRM
-    , GpioButtons& buttons
-#endif
-) {
+static void handle_screen_navigation(const std::vector<LiveScreen>& screens, std::size_t& active_screen) {
   if (screens.empty()) return;
 
-#ifdef PLATFORM_DRM
-  buttons.update();
-  bool move = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_LEFT) || buttons.pressed_move();
-#else
   bool move = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_LEFT);
-#endif
+
+  if (screen_move_flag) {
+    screen_move_flag = 0;
+    move = true;
+  }
 
   if (move) {
     active_screen = (active_screen + 1) % screens.size();
@@ -65,6 +74,12 @@ int main(int argc, char *argv[]) {
   sa.sa_handler = sighup_handler;
   sigaction(SIGHUP, &sa, nullptr);
 
+  struct sigaction sa_usr{};
+  sa_usr.sa_handler = sigusr1_handler;
+  sigaction(SIGUSR1, &sa_usr, nullptr);
+
+  write_pidfile();
+
   DisplayConfig display_cfg;
   std::vector<LiveScreen> screens;
   std::size_t active_screen = 0;
@@ -78,13 +93,6 @@ int main(int argc, char *argv[]) {
   std::string fontPath = std::string(GetApplicationDirectory()) + "assets/fonts/InterVariable.ttf";
   Font uiFont = LoadFontEx(fontPath.c_str(), 512, 0, 0);
   SetTextureFilter(uiFont.texture, TEXTURE_FILTER_BILINEAR);
-
-#ifdef PLATFORM_DRM
-  GpioButtons gpio_buttons;
-  if (!gpio_buttons.ok()) {
-    fprintf(stderr, "gpio: buttons unavailable, keyboard-only navigation\n");
-  }
-#endif
 
   TelemetryQueue *queue = nullptr;
   std::size_t consumer_pos = 0;
@@ -108,11 +116,7 @@ int main(int argc, char *argv[]) {
       printf("reloaded config from %s\n", config_path);
     }
 
-    handle_screen_navigation(screens, active_screen
-#ifdef PLATFORM_DRM
-        , gpio_buttons
-#endif
-    );
+    handle_screen_navigation(screens, active_screen);
 
     if (!queue && ++queue_retry >= 60) {
       queue_retry = 0;
@@ -149,5 +153,6 @@ int main(int argc, char *argv[]) {
 
   UnloadFont(uiFont);
   CloseWindow();
+  remove_pidfile();
   return 0;
 }
