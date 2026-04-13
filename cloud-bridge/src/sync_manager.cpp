@@ -265,7 +265,12 @@ void SyncManager::apply_download_locked(std::uint64_t version_id,
                                        const std::string& content_b64) {
     if (content_b64.empty()) return;
 
-    const std::string bytes = macaron::Base64::Decode(content_b64);
+    std::string bytes;
+    const std::string err = macaron::Base64::Decode(content_b64, bytes);
+    if (!err.empty()) {
+        printf("[sync] download failed: base64 decode: %s\n", err.c_str());
+        return;
+    }
     if (!write_file_bytes(opts_.file_path, bytes)) {
         printf("[sync] download failed: cannot write %s\n", opts_.file_path.c_str());
         return;
