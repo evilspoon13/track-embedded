@@ -18,7 +18,11 @@ sudo cp "$ROOT/data-logger/data-logger"       /opt/track/data-logger
 sudo cp "$ROOT/graphics-engine/graphics-engine" /opt/track/graphics-engine/graphics-engine
 sudo cp "$ROOT/cloud-bridge/cloud-bridge"     /opt/track/cloud-bridge
 sudo cp "$ROOT/gps-reader/gps-reader"         /opt/track/gps-reader
-sudo cp "$ROOT/gpio-reader/gpio-reader"       /opt/track/gpio-reader
+if [ -f "$ROOT/gpio-reader/gpio-reader" ]; then
+    sudo cp "$ROOT/gpio-reader/gpio-reader"   /opt/track/gpio-reader
+else
+    echo "  Skipping gpio-reader (not built — requires PLATFORM=DRM)"
+fi
 
 # copy graphics engine assets (fonts etc)
 if [ -d "$ROOT/graphics-engine/assets" ]; then
@@ -39,6 +43,7 @@ done
 echo "Copying captive portal..."
 sudo cp "$ROOT/captive-portal/server.py"  /opt/track/captive-portal/
 sudo cp "$ROOT/captive-portal/wifi.py"    /opt/track/captive-portal/
+sudo cp "$ROOT/captive-portal/shm_reader.py" /opt/track/captive-portal/
 sudo cp "$ROOT/captive-portal/requirements.txt" /opt/track/captive-portal/
 sudo cp -r "$ROOT/captive-portal/templates" /opt/track/captive-portal/
 sudo cp -r "$ROOT/captive-portal/static"   /opt/track/captive-portal/

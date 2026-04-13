@@ -46,6 +46,8 @@ std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
                     g.maxValue = (float)wc.data.max;
                     g.units = wc.data.unit;
                     fill_thresholds(g.thresholds, g.thresholdCount, wc.data);
+                    g.alarm = wc.alarm;
+                    g.criticalThreshold = (float)wc.data.critical_threshold;
                     lw.widget = g;
                     break;
                 }
@@ -57,6 +59,8 @@ std::vector<LiveScreen> build_screens(const DisplayConfig& config) {
                     b.maxValue = (float)wc.data.max;
                     b.units = wc.data.unit;
                     fill_thresholds(b.thresholds, b.thresholdCount, wc.data);
+                    b.alarm = wc.alarm;
+                    b.criticalThreshold = (float)wc.data.critical_threshold;
                     lw.widget = b;
                     break;
                 }
