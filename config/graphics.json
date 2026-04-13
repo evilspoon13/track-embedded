@@ -1,22 +1,17 @@
 {
   "screens": [
     {
-      "name": "the screen",
+      "name": "Screen 1",
       "widgets": [
         {
-          "type": "indicator",
-          "alarm": true,
-          "position": {
-            "x": 9,
-            "y": 5,
-            "width": 1,
-            "height": 1
-          },
+          "type": "number",
+          "alarm": false,
+          "position": { "x": 3, "y": 2, "width": 2, "height": 1 },
           "data": {
-            "can_id": "0x300",
-            "can_id_label": "",
-            "signal": "temperature",
-            "unit": "°C",
+            "can_id": "0x100",
+            "can_id_label": "my_id",
+            "signal": "SIGNAL_1",
+            "unit": "rpm",
             "min": 0,
             "max": 100,
             "caution_threshold": 0,
@@ -24,30 +19,45 @@
           }
         },
         {
-          "type": "gauge",
-          "alarm": true,
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 2,
-            "height": 2
-          },
+          "type": "number",
+          "alarm": false,
+          "position": { "x": 5, "y": 2, "width": 2, "height": 1 },
           "data": {
-            "can_id": "0x300",
-            "can_id_label": "",
-            "signal": "voltage",
-            "unit": "°C",
+            "can_id": "0x100",
+            "can_id_label": "my_id",
+            "signal": "SIGNAL_2",
+            "unit": "unit",
             "min": 0,
             "max": 100,
             "caution_threshold": 0,
             "critical_threshold": 0
           }
+        },
+        {
+          "type": "graph",
+          "alarm": false,
+          "position": { "x": 4, "y": 3, "width": 4, "height": 2 },
+          "data": {
+            "can_id": "0x100",
+            "can_id_label": "my_id",
+            "signal": "SIGNAL_1",
+            "unit": "speed",
+            "min": 0,
+            "max": 100,
+            "caution_threshold": 80,
+            "critical_threshold": 80
+          },
+          "graph": {
+            "mode": "xy",
+            "max_points": 1000,
+            "x_can_id": "0x100",
+            "x_signal": "",
+            "x_unit": "pressure",
+            "x_min": 0,
+            "x_max": 80
+          }
         }
       ]
-    },
-    {
-      "name": "Screen 3",
-      "widgets": []
     }
   ]
 }

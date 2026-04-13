@@ -87,6 +87,9 @@ struct GaugeWidget
     GaugeThreshold thresholds[8];
     int thresholdCount = 0;
 
+    bool  alarm = false;
+    float criticalThreshold = 0.0f;
+
     float scale = 1.0f;
 
     Color panelFill   = Color{0, 0, 0, 180};
@@ -137,6 +140,9 @@ struct BarGraphWidget
     GaugeThreshold thresholds[8];
     int thresholdCount = 0;
 
+    bool  alarm = false;
+    float criticalThreshold = 0.0f;
+
     float scale = 1.0f;
 
     // Style
@@ -184,6 +190,9 @@ struct HorizontalBarGraphWidget
 
     GaugeThreshold thresholds[8];
     int thresholdCount = 0;
+
+    bool  alarm = false;
+    float criticalThreshold = 0.0f;
 
     float scale = 1.0f;
 

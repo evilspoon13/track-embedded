@@ -81,4 +81,6 @@ void HorizontalBarGraphWidget::Draw(const Font& font) const {
         DrawTextEx(font, units, {uX, uY}, unitsFs, spacingS,
                    Color{textColor.r, textColor.g, textColor.b, 190});
     }
+
+    draw_alarm_overlay(lo, alarm_active(alarm, value, criticalThreshold));
 }

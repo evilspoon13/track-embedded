@@ -63,4 +63,6 @@ void GaugeWidget::Draw(const Font& font) const {
     draw_value_with_units(font, vstr, units,
                           valueTextSize * scale, unitsTextSize * scale, 1.0f * scale,
                           c.x, c.y, textColor, scale);
+
+    draw_alarm_overlay(lo, alarm_active(alarm, value, criticalThreshold));
 }

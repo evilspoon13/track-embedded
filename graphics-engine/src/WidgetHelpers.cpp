@@ -35,6 +35,19 @@ void draw_panel(const WidgetLayout& lo, Color fill, Color border_color) {
     DrawRectangleLinesEx(Rectangle{lo.x, lo.y, lo.w, lo.h}, lo.borderS, border_color);
 }
 
+bool alarm_active(bool alarm, float value, float critical) {
+    if (!alarm) return false;
+    if (value < critical) return false;
+    // 2 Hz blink (0.5 s on, 0.5 s off) based on monotonic wall time.
+    return ((int)(GetTime() * 2.0)) & 1;
+}
+
+void draw_alarm_overlay(const WidgetLayout& lo, bool active) {
+    if (!active) return;
+    const float t = 4.0f;  // overlay thickness (px @ scale=1 already baked into panel)
+    DrawRectangleLinesEx(Rectangle{lo.x, lo.y, lo.w, lo.h}, t, RED);
+}
+
 float normalize_value(float value, float min_value, float max_value) {
     float denom = max_value - min_value;
     float p = (denom != 0.0f) ? ((value - min_value) / denom) : 0.0f;

@@ -20,7 +20,7 @@ from flask import Flask, request, jsonify, redirect, send_from_directory, render
 from flask_sock import Sock
 
 import wifi
-from shm_reader import create_reader
+from shm_reader import create_telemetry_reader, create_gps_reader
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
@@ -29,6 +29,8 @@ DBC_PATH = CONFIG_DIR / "display.dbc"
 DEVICE_PATH = CONFIG_DIR / "device.json"
 UI_DIR = Path(__file__).resolve().parent / "ui"  # vite build output
 LOG_DIR = Path("/tmp/track-logs")
+SYNC_STATE_PATH = Path("/opt/track/state/sync_state.json")
+SYNC_DBC_STATE_PATH = Path("/opt/track/state/sync_state_display_dbc.json")
 LOG_ENTRY_SIZE = 24
 DEFAULT_LOG_LIMIT = 100
 MAX_LOG_LIMIT = 500
@@ -155,7 +157,57 @@ def write_graphics_config(config):
     if not atomic_write(GRAPHICS_PATH, json.dumps(config, indent=2)):
         return False
     send_sighup("track-graphics.service")
+    mark_graphics_pending_sync()
+    send_sighup("track-cloud-bridge.service")
     return True
+
+
+def mark_graphics_pending_sync():
+    try:
+        state = {}
+        if SYNC_STATE_PATH.exists():
+            try:
+                state = json.loads(SYNC_STATE_PATH.read_text())
+            except json.JSONDecodeError:
+                state = {}
+
+        version_id = state.get("version_id", 0)
+        if not isinstance(version_id, int):
+            version_id = 0
+
+        state["pending_upload"] = True
+        state["pending_base_version_id"] = version_id
+        state["pending_change_id"] = secrets.token_hex(16)
+
+        SYNC_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write(SYNC_STATE_PATH, json.dumps(state, indent=2))
+        return True
+    except OSError:
+        return False
+
+
+def mark_dbc_pending_sync():
+    try:
+        state = {}
+        if SYNC_DBC_STATE_PATH.exists():
+            try:
+                state = json.loads(SYNC_DBC_STATE_PATH.read_text())
+            except json.JSONDecodeError:
+                state = {}
+
+        version_id = state.get("version_id", 0)
+        if not isinstance(version_id, int):
+            version_id = 0
+
+        state["pending_upload"] = True
+        state["pending_base_version_id"] = version_id
+        state["pending_change_id"] = secrets.token_hex(16)
+
+        SYNC_DBC_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write(SYNC_DBC_STATE_PATH, json.dumps(state, indent=2))
+        return True
+    except OSError:
+        return False
 
 
 # -- DBC helpers --
@@ -405,6 +457,8 @@ def api_update_dbc():
     if not atomic_write(DBC_PATH, raw):
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
+    mark_dbc_pending_sync()
+    send_sighup("track-cloud-bridge.service")
     return jsonify({"msg": "Wrote DBC"})
 
 
@@ -424,6 +478,8 @@ def api_upload_dbc():
     if not atomic_write(DBC_PATH, raw):
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
+    mark_dbc_pending_sync()
+    send_sighup("track-cloud-bridge.service")
     return jsonify(config)
 
 
@@ -468,27 +524,41 @@ def api_get_logs():
 
 # -- live telemetry WebSocket --
 
-_shm_reader = None
+_tel_reader = None
+_gps_reader = None
 
-def get_shared_reader():
-    global _shm_reader
-    if _shm_reader is None:
-        _shm_reader = create_reader()
-    return _shm_reader
+def get_telemetry_reader():
+    global _tel_reader
+    if _tel_reader is None:
+        _tel_reader = create_telemetry_reader()
+    return _tel_reader
+
+def get_gps_reader():
+    global _gps_reader
+    if _gps_reader is None:
+        _gps_reader = create_gps_reader()
+    return _gps_reader
 
 
 @sock.route("/ws/client")
 def telemetry_ws(ws):
-    reader = get_shared_reader()
-    if not reader:
+    tel = get_telemetry_reader()
+    gps = get_gps_reader()
+    if not tel and not gps:
         ws.close(1011, "Shared memory not available")
         return
-    pos = reader.current_pos()
+    tel_pos = tel.current_pos() if tel else 0
+    gps_pos = gps.current_pos() if gps else 0
     try:
         while True:
-            signals, pos = reader.consume(pos)
-            if signals:
-                ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
+            if tel:
+                signals, tel_pos = tel.consume(tel_pos)
+                if signals:
+                    ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
+            if gps:
+                gps_data, gps_pos = gps.consume(gps_pos)
+                if gps_data:
+                    ws.send(json.dumps({"type": "GPS", "payload": gps_data}))
             time.sleep(0.05)
     except Exception:
         return

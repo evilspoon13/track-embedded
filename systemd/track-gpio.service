@@ -1,0 +1,14 @@
+[Unit]
+Description=TRACK GPIO Reader
+After=track-setup.service
+Requires=track-setup.service
+
+[Service]
+Type=simple
+ExecStart=/opt/track/gpio-reader
+SupplementaryGroups=gpio
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

@@ -6,7 +6,7 @@ After=local-fs.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/bash -c 'mkdir -p /tmp/track-logs'
+ExecStart=/bin/bash -c 'mkdir -p /tmp/track-logs /run/track'
 
 [Install]
 WantedBy=multi-user.target

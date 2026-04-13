@@ -7,6 +7,10 @@ export PLATFORM ?= X11
 
 SUBDIRS = can-reader gps-reader data-logger graphics-engine cloud-bridge
 
+ifeq ($(PLATFORM), DRM)
+    SUBDIRS += gpio-reader
+endif
+
 all: $(SUBDIRS)
 
 $(SUBDIRS):

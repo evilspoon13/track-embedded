@@ -15,15 +15,31 @@
 #include "shared_memory.hpp"
 #include "telemetry_queue.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <csignal>
 #include <cstdio>
 #include <string>
+#include <unistd.h>
+
+static constexpr const char* PIDFILE = "/run/track/graphics.pid";
 
 static volatile sig_atomic_t reload_flag = 0;
+static volatile sig_atomic_t screen_move_flag = 0;
 
 static void sighup_handler(int) { reload_flag = 1; }
+static void sigusr1_handler(int) { screen_move_flag = 1; }
+
+static void write_pidfile() {
+    FILE* f = fopen(PIDFILE, "w");
+    if (f) {
+        fprintf(f, "%d\n", getpid());
+        fclose(f);
+    }
+}
+
+static void remove_pidfile() {
+    unlink(PIDFILE);
+}
 
 static void update_all_screens(std::vector<LiveScreen> &screens,
                                const TelemetryMessage &msg) {
@@ -43,12 +59,15 @@ static void handle_screen_navigation(const std::vector<LiveScreen> &screens,
   if (screens.empty())
     return;
 
-  if (IsKeyPressed(KEY_RIGHT)) {
-    active_screen = (active_screen + 1) % screens.size();
+  bool move = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_LEFT);
+
+  if (screen_move_flag) {
+    screen_move_flag = 0;
+    move = true;
   }
 
-  if (IsKeyPressed(KEY_LEFT)) {
-    active_screen = (active_screen + screens.size() - 1) % screens.size();
+  if (move) {
+    active_screen = (active_screen + 1) % screens.size();
   }
 }
 
@@ -204,23 +223,26 @@ static void run_demo(const Font &font) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 int main(int argc, char *argv[]) {
-  bool demo_mode = (argc > 1 && std::string(argv[1]) == "--demo");
-  const char *config_path = (argc > 1 && !demo_mode) ? argv[1] : "data.json";
+  const char *config_path = (argc > 1) ? argv[1] : "data.json";
 
   struct sigaction sa{};
   sa.sa_handler = sighup_handler;
   sigaction(SIGHUP, &sa, nullptr);
 
+  struct sigaction sa_usr{};
+  sa_usr.sa_handler = sigusr1_handler;
+  sigaction(SIGUSR1, &sa_usr, nullptr);
+
+  write_pidfile();
+
   DisplayConfig display_cfg;
   std::vector<LiveScreen> screens;
   std::size_t active_screen = 0;
-  if (!demo_mode) {
-    display_cfg = load_display_config(config_path);
-    screens = build_screens(display_cfg);
-  }
+  display_cfg = load_display_config(config_path);
+  screens = build_screens(display_cfg);
 
   const int W = 800, H = 480;
-  InitWindow(W, H, demo_mode ? "TRACK Display — Widget Demo" : "TRACK Display");
+  InitWindow(W, H, "TRACK Display");
   SetTargetFPS(60);
 
   std::string fontPath =
@@ -231,57 +253,51 @@ int main(int argc, char *argv[]) {
   TelemetryQueue *queue = nullptr;
   std::size_t consumer_pos = 0;
   int queue_retry = 0;
-  if (!demo_mode) {
-    queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
-    consumer_pos = queue ? queue->current_pos() : 0;
-  }
+  queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
+  consumer_pos = queue ? queue->current_pos() : 0;
+
 
   while (!WindowShouldClose()) {
-    if (!demo_mode) {
-      if (reload_flag) {
-        reload_flag = 0;
-        display_cfg = load_display_config(config_path);
-        screens = build_screens(display_cfg);
+    if (reload_flag) {
+      reload_flag = 0;
+      display_cfg = load_display_config(config_path);
+      screens = build_screens(display_cfg);
 
-        if (screens.empty()) {
-          active_screen = 0;
-        } else if (active_screen >= screens.size()) {
-          active_screen = screens.size() - 1;
-        }
-
-        printf("reloaded config from %s\n", config_path);
+      if (screens.empty()) {
+        active_screen = 0;
+      } else if (active_screen >= screens.size()) {
+        active_screen = screens.size() - 1;
       }
 
-      handle_screen_navigation(screens, active_screen);
+      printf("reloaded config from %s\n", config_path);
+    }
 
-      if (!queue && ++queue_retry >= 60) {
-        queue_retry = 0;
-        queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
-        if (queue)
-          consumer_pos = queue->current_pos();
-      }
+    handle_screen_navigation(screens, active_screen);
 
-      if (queue) {
-        queue->consume(consumer_pos, [&screens](const TelemetryMessage &msg) {
-          update_all_screens(screens, msg);
-        });
-      }
+    if (!queue && ++queue_retry >= 60) {
+      queue_retry = 0;
+      queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
+      if (queue)
+        consumer_pos = queue->current_pos();
+    }
+
+    if (queue) {
+      queue->consume(consumer_pos, [&screens](const TelemetryMessage &msg) {
+        update_all_screens(screens, msg);
+      });
     }
 
     BeginDrawing();
     ClearBackground(BLACK);
 
-    if (demo_mode) {
-      run_demo(uiFont);
-    } else if (!screens.empty()) {
+    if (!screens.empty()) {
       for (const auto &lw : screens[active_screen].widgets) {
         lw.draw(uiFont);
       }
     } else {
       const char *msg = "No screens configured";
       Vector2 size = MeasureTextEx(uiFont, msg, 28.0f, 1.0f);
-      DrawTextEx(uiFont, msg, Vector2{(W - size.x) * 0.5f, (H - size.y) * 0.5f},
-                 28.0f, 1.0f, RAYWHITE);
+      DrawTextEx(uiFont, msg, Vector2{(W - size.x) * 0.5f, (H - size.y) * 0.5f}, 28.0f, 1.0f, RAYWHITE);
     }
 
     EndDrawing();
@@ -292,5 +308,6 @@ int main(int argc, char *argv[]) {
 
   UnloadFont(uiFont);
   CloseWindow();
+  remove_pidfile();
   return 0;
 }

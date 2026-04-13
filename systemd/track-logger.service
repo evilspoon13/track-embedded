@@ -1,6 +1,6 @@
 [Unit]
 Description=TRACK Data Logger
-After=track-can-reader.service
+After=track-can-reader.service track-gpio.service
 Requires=track-can-reader.service
 
 [Service]

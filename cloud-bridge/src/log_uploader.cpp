@@ -68,8 +68,7 @@ void LogUploader::upload_loop() {
     }
 }
 
-void LogUploader::upload_file(const std::filesystem::path& bin_path,
-                               const std::filesystem::path& done_path) {
+void LogUploader::upload_file(const std::filesystem::path& bin_path, const std::filesystem::path& done_path) {
     namespace fs = std::filesystem;
 
     std::string filename = bin_path.filename().string();

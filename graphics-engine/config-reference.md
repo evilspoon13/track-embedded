@@ -41,7 +41,7 @@ Every widget has the same outer shape:
 
 {
     "type":     <string>,       -- see Widget Types below
-    "alarm":    <bool>,         -- reserved for future alarm behavior (use false for now)
+    "alarm":    <bool>,         -- when true, widget flashes a red border once value >= critical_threshold (gauge/bar only)
     "position": { ... },        -- see Position below
     "data":     { ... }         -- see Data below
 }

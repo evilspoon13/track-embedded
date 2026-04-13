@@ -36,6 +36,12 @@ WidgetLayout compute_layout(int gx, int gy, int wTiles, int hTiles,
 
 void draw_panel(const WidgetLayout& lo, Color fill, Color border_color);
 
+// returns true when alarm is enabled, value >= critical
+bool alarm_active(bool alarm, float value, float critical);
+
+// draws a pulsing red border inside the widget panel when active
+void draw_alarm_overlay(const WidgetLayout& lo, bool active);
+
 // ── Value helpers ─────────────────────────────────────────────────────────────
 
 float       normalize_value(float value, float min_value, float max_value);

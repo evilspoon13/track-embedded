@@ -24,6 +24,7 @@ sudo apt update && sudo apt install -y \
     libgbm-dev \
     libegl-dev \
     libgles2-mesa-dev \
+    libgpiod-dev \
     hostapd \
     dnsmasq
 

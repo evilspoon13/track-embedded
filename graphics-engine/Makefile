@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -I../common
+CXXFLAGS = -std=c++17 -Wall -Wextra -O0 -g -I../common
 
 # Platform selection: make PLATFORM=DRM for headless Pi/embedded
 PLATFORM ?= X11

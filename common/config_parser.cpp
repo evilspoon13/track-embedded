@@ -112,10 +112,10 @@ DisplayConfig load_display_config(const std::string &path) {
             gc.window_seconds = 1.0f;
         } else {
           gc.x_can_id = parse_can_id(g["x_can_id"].get<std::string>());
-          gc.x_signal = g["x_signal"];
-          gc.x_unit = g["x_unit"].get<std::string>();
-          gc.x_min = g["x_min"];
-          gc.x_max = g["x_max"];
+          gc.x_signal = g.value("x_signal", std::string(""));
+          gc.x_unit = g.value("x_unit", std::string(""));
+          gc.x_min = g.value("x_min", 0.0);
+          gc.x_max = g.value("x_max", 100.0);
         }
         cfg.graph = gc;
       }

@@ -28,6 +28,14 @@ static std::string make_log_path() {
 
 LogWriter::LogWriter() {
   mkdir(LOG_DIR, 0755);
+}
+
+LogWriter::~LogWriter() {
+  close();
+}
+
+void LogWriter::open() {
+  if (file_) return;
   path_ = make_log_path();
   file_ = fopen(path_.c_str(), "wb");
   if (!file_) {
@@ -37,18 +45,19 @@ LogWriter::LogWriter() {
   }
 }
 
-LogWriter::~LogWriter() {
-  if (file_) {
-    fflush(file_);
-    fclose(file_);
-    file_ = nullptr;
+void LogWriter::close() {
+  if (!file_) return;
+  fflush(file_);
+  fclose(file_);
+  file_ = nullptr;
 
-    // write marker so cloud-bridge knows this file is finalized
-    std::string done_path = path_.substr(0, path_.size() - 4) + ".done";
-    FILE *marker = fopen(done_path.c_str(), "w");
-    if (marker)
-      fclose(marker);
-  }
+  // write marker so cloud-bridge knows this file is finalized
+  std::string done_path = path_.substr(0, path_.size() - 4) + ".done";
+  FILE *marker = fopen(done_path.c_str(), "w");
+  if (marker)
+    fclose(marker);
+
+  printf("Finalized %s\n", path_.c_str());
 }
 
 bool LogWriter::is_open() const { return file_ != nullptr; }
