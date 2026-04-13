@@ -19,8 +19,14 @@
 #include <fstream>
 #include <string>
 
+// buttons
 static constexpr unsigned int GPIO_PIN_SCREEN_MOVE = 11;
 static constexpr unsigned int GPIO_PIN_LOG_TOGGLE  = 13;
+
+// led
+static constexpr unsigned int GPIO_LED_GREEN = 16; // data logger on
+static constexpr unsigned int GPIO_LED_BLUE = 18; // cloud link on
+static constexpr unsigned int GPIO_LED_RED = 29; // fault indicator
 
 static constexpr int64_t DEBOUNCE_NS = 150'000'000; // 150ms
 
