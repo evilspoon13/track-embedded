@@ -19,7 +19,7 @@
 #include <fstream>
 #include <string>
 
-static constexpr unsigned int GPIO_PIN_SCREEN_MOVE = 12;
+static constexpr unsigned int GPIO_PIN_SCREEN_MOVE = 11;
 static constexpr unsigned int GPIO_PIN_LOG_TOGGLE  = 13;
 
 static constexpr int64_t DEBOUNCE_NS = 150'000'000; // 150ms
