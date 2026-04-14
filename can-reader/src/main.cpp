@@ -9,9 +9,12 @@
 #include <csignal>
 #include <cstdio>
 
+#include <chrono>
+
 #include "telemetry_queue.hpp"
 #include "dbc_parser.hpp"
 #include "shared_memory.hpp"
+#include "status_shm.hpp"
 #include "can_socket.hpp"
 #include "frame_parser.hpp"
 
@@ -52,9 +55,32 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    TrackStatus* status = open_status_shm();
+    if (status)
+        status->can_healthy.store(0, std::memory_order_relaxed);
+
+    // WILL BE REPLACED WITH RADUS ONE WAY DELAY CALC
+    using clock = std::chrono::steady_clock;
+    auto last_frame = clock::now();
+    bool healthy_reported = false;
+    constexpr auto health_timeout = std::chrono::milliseconds(1000);
+
     can_frame frame;
     while(running) {
-        if (sock.read(frame)) {
+        bool got_frame = sock.read(frame);
+        auto now = clock::now();
+
+        if (got_frame)
+            last_frame = now;
+
+        const bool healthy = (now - last_frame) < health_timeout;
+        
+        if (status && healthy != healthy_reported) {
+            status->can_healthy.store(healthy ? 1 : 0, std::memory_order_relaxed);
+            healthy_reported = healthy;
+        }
+
+        if (got_frame) {
 
             printf("Received CAN frame with ID: %03x\n", frame.can_id);
             auto it = frame_map.find(frame.can_id);
@@ -82,6 +108,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    if (status) {
+        status->can_healthy.store(0, std::memory_order_relaxed);
+        close_status_shm(status);
+    }
     close_shared_queue(queue, TELEMETRY_SHM, true);
 
     return 0;

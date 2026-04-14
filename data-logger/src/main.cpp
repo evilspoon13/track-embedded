@@ -12,6 +12,7 @@
 
 #include "telemetry_queue.hpp"
 #include "shared_memory.hpp"
+#include "status_shm.hpp"
 #include "log_writer.hpp"
 
 static constexpr const char* PIDFILE = "/run/track/logger.pid";
@@ -53,6 +54,10 @@ int main() {
         return 1;
     }
 
+    TrackStatus* status = open_status_shm();
+    if (status)
+        status->logger_recording.store(0, std::memory_order_relaxed);
+
     LogWriter writer;
     bool recording = false;
 
@@ -60,15 +65,23 @@ int main() {
     printf("Data logger started. Press log button to begin recording.\n");
 
     while (running) {
+
+        // from gpio reader SIGUSR1
         if (toggle_flag) {
             toggle_flag = 0;
             recording = !recording;
             if (recording) {
                 writer.open();
-                printf("Recording started\n");
-            } else {
+                // only reflect "recording" if the file actually opened
+                recording = writer.is_open();
+                printf(recording ? "Recording started\n" : "Recording failed to start\n");
+            }
+            else {
                 writer.close();
                 printf("Recording stopped\n");
+            }
+            if (status) {
+                status->logger_recording.store(recording ? 1 : 0, std::memory_order_relaxed);
             }
         }
 
@@ -91,6 +104,10 @@ int main() {
 
     if (recording) {
         writer.close();
+    }
+    if (status) {
+        status->logger_recording.store(0, std::memory_order_relaxed);
+        close_status_shm(status);
     }
 
     close_shared_queue(queue, TELEMETRY_SHM, false);

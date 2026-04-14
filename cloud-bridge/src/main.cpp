@@ -20,6 +20,7 @@
 #include "device_sync.hpp"
 #include "log_uploader.hpp"
 #include "shared_memory.hpp"
+#include "status_shm.hpp"
 #include "sync_manager.hpp"
 #include "telemetry_queue.hpp"
 #include "time_util.hpp"
@@ -58,6 +59,10 @@ int main() {
     std::perror("Failed to open shared memory queue");
     return 1;
     }
+
+    TrackStatus *status = open_status_shm();
+    if (status)
+        status->cloud_ws_connected.store(0, std::memory_order_relaxed);
 
     DeviceSync device_sync("/opt/track/config/device.json", api_url);
 
@@ -129,6 +134,9 @@ int main() {
         graphics_sync.on_ws_disconnected();
         dbc_sync.on_ws_disconnected();
     }
+    if (connected != last_connected && status) {
+        status->cloud_ws_connected.store(connected ? 1 : 0, std::memory_order_relaxed);
+    }
     last_connected = connected;
 
     std::size_t prev = pos;
@@ -173,6 +181,10 @@ int main() {
     graphics_sync.stop();
     dbc_sync.stop();
     ws.stop();
+    if (status) {
+        status->cloud_ws_connected.store(0, std::memory_order_relaxed);
+        close_status_shm(status);
+    }
     close_shared_queue(queue, TELEMETRY_SHM, false);
     return 0;
 }
