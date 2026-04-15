@@ -13,6 +13,7 @@ import subprocess
 import struct
 import time
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import cantools
@@ -271,6 +272,11 @@ def read_dbc_frame_labels():
     }
 
 
+def _ts_to_date(ts_ms):
+    # match cloud: server-local YYYY-MM-DD
+    return datetime.fromtimestamp(ts_ms / 1000).strftime("%Y-%m-%d")
+
+
 def iter_local_log_entries():
     if not LOG_DIR.exists():
         return
@@ -465,11 +471,15 @@ def api_get_logs():
     except ValueError:
         before_ts = None
 
+    date_filter = request.args.get("date")
+
     frame_labels = read_dbc_frame_labels()
 
     filtered_entries = []
     for entry in iter_local_log_entries() or ():
         if before_ts is not None and entry["ts"] >= before_ts:
+            continue
+        if date_filter and _ts_to_date(entry["ts"]) != date_filter:
             continue
         filtered_entries.append({
             **entry,
@@ -486,6 +496,17 @@ def api_get_logs():
         "entries": page,
         "nextCursor": next_cursor,
     })
+
+
+@app.route("/api/logs/days", methods=["GET"])
+def api_get_log_days():
+    counts = {}
+    for entry in iter_local_log_entries() or ():
+        date = _ts_to_date(entry["ts"])
+        counts[date] = counts.get(date, 0) + 1
+    days = [{"date": d, "count": c} for d, c in counts.items()]
+    days.sort(key=lambda x: x["date"], reverse=True)
+    return jsonify({"days": days})
 
 
 # -- live telemetry WebSocket --
