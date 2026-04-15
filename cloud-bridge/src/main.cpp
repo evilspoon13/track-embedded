@@ -207,7 +207,7 @@ int main() {
             last_send_time = now;
         }
 
-        if (has_new_gps && latest_gps.has_fix && now - last_gps_send_time >= gps_send_interval_ms) {
+        if (has_new_gps && now - last_gps_send_time >= gps_send_interval_ms) {
             nlohmann::json j;
             j["type"] = "gps";
             j["device_id"] = device_sync.device_id();
