@@ -23,6 +23,7 @@
 #include "log_uploader.hpp"
 #include "shared_memory.hpp"
 #include "status_shm.hpp"
+#include "gps_queue.hpp"
 #include "telemetry_queue.hpp"
 #include "time_util.hpp"
 #include "ws_client.hpp"
@@ -108,8 +109,14 @@ int main() {
     // reader of queue
     TelemetryQueue *queue = open_shared_queue<TelemetryQueue>(TELEMETRY_SHM, false);
     if (!queue) {
-    std::perror("Failed to open shared memory queue");
-    return 1;
+        std::perror("Failed to open shared memory queue");
+        return 1;
+    }
+
+    // GPS queue is optional
+    GpsQueue *gps_queue = open_shared_queue<GpsQueue>(GPS_SHM, false);
+    if (!gps_queue) {
+        std::printf("GPS queue not available, GPS publishing disabled\n");
     }
 
     TrackStatus *status = open_status_shm();
@@ -139,68 +146,96 @@ int main() {
     device_sync.registerWithCloud();
 
     std::size_t pos = queue->current_pos();
+    std::size_t gps_pos = gps_queue ? gps_queue->current_pos() : 0;
     std::unordered_map<std::string, double> signals;
+    GpsMessage latest_gps{};
+    bool has_new_gps = false;
     int64_t last_send_time = 0;
+    int64_t last_gps_send_time = 0;
     int64_t last_heartbeat_time = 0;
+    constexpr int gps_send_interval_ms = 1000;
 
     printf("Cloud bridge started. ws=%s api=%s device=%s\n", ws_url.c_str(), api_url.c_str(), device_sync.device_id().c_str());
 
     while (running) {
-    if (reload_flag) {
-        reload_flag = 0;
-        device_sync.reload();
-        device_sync.registerWithCloud();
-    }
-    if (graphics_changed) {
-        if (ws.is_connected()) {
-            if (try_send_graphics_upload(ws, device_sync.device_id(), "/opt/track/config/graphics.json")) {
-                graphics_changed = 0;
+        if (reload_flag) {
+            reload_flag = 0;
+            device_sync.reload();
+            device_sync.registerWithCloud();
+        }
+        if (graphics_changed) {
+            if (ws.is_connected()) {
+                if (try_send_graphics_upload(ws, device_sync.device_id(), "/opt/track/config/graphics.json")) {
+                    graphics_changed = 0;
+                }
             }
         }
-    }
-    if (dbc_changed) {
-        if (ws.is_connected()) {
-            if (try_send_dbc_upload(ws, device_sync.device_id(), "/opt/track/config/display.dbc")) {
-                dbc_changed = 0;
+        if (dbc_changed) {
+            if (ws.is_connected()) {
+                if (try_send_dbc_upload(ws, device_sync.device_id(), "/opt/track/config/display.dbc")) {
+                    dbc_changed = 0;
+                }
             }
         }
-    }
 
-    std::size_t prev = pos;
-    queue->consume(pos, [&](const TelemetryMessage &msg) {
-        std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
-        signals[key] = msg.value;
-    });
+        std::size_t prev = pos;
+        queue->consume(pos, [&](const TelemetryMessage &msg) {
+            std::string key = std::to_string(msg.can_id) + ":" + msg.signal_name;
+            signals[key] = msg.value;
+        });
 
-    int64_t now = now_ms();
-    if (now - last_send_time >= send_interval_ms) {
-        if (!signals.empty()) {
-        nlohmann::json j;
-        j["type"] = "telemetry";
-        j["device_id"] = device_sync.device_id();
-        j["ts"] = now;
-        j["signals"] = signals;
-
-        if (ws.send(j.dump())) {
-            signals.clear();
+        if (gps_queue) {
+            gps_queue->consume(gps_pos, [&](const GpsMessage &m) {
+                latest_gps = m;
+                has_new_gps = true;
+            });
         }
+
+        int64_t now = now_ms();
+        if (now - last_send_time >= send_interval_ms) {
+            if (!signals.empty()) {
+                nlohmann::json j;
+                j["type"] = "telemetry";
+                j["device_id"] = device_sync.device_id();
+                j["ts"] = now;
+                j["signals"] = signals;
+
+                if (ws.send(j.dump())) {
+                    signals.clear();
+                }
+            }
+            last_send_time = now;
         }
-        last_send_time = now;
-    }
 
-    if (now - last_heartbeat_time >= heartbeat_interval_ms) {
-        nlohmann::json heartbeat;
-        heartbeat["type"] = "heartbeat";
-        heartbeat["status"] = "connected";
-        heartbeat["device_id"] = device_sync.device_id();
-        heartbeat["ts"] = now;
-        ws.send(heartbeat.dump());
-        last_heartbeat_time = now;
-    }
+        if (has_new_gps && latest_gps.has_fix && now - last_gps_send_time >= gps_send_interval_ms) {
+            nlohmann::json j;
+            j["type"] = "gps";
+            j["device_id"] = device_sync.device_id();
+            j["ts"] = now;
+            j["lat"] = latest_gps.latitude;
+            j["lon"] = latest_gps.longitude;
+            j["speed_kmh"] = latest_gps.speed_kmh;
+            j["heading"] = latest_gps.heading;
+            j["gps_ts"] = latest_gps.timestamp_ms;
+            if (ws.send(j.dump())) {
+                has_new_gps = false;
+                last_gps_send_time = now;
+            }
+        }
 
-    if (pos == prev) {
-        usleep(1000);
-    }
+        if (now - last_heartbeat_time >= heartbeat_interval_ms) {
+            nlohmann::json heartbeat;
+            heartbeat["type"] = "heartbeat";
+            heartbeat["status"] = "connected";
+            heartbeat["device_id"] = device_sync.device_id();
+            heartbeat["ts"] = now;
+            ws.send(heartbeat.dump());
+            last_heartbeat_time = now;
+        }
+
+        if (pos == prev) {
+            usleep(1000);
+        }
     }
 
     printf("Cloud bridge shutting down\n");
@@ -211,5 +246,6 @@ int main() {
         close_status_shm(status);
     }
     close_shared_queue(queue, TELEMETRY_SHM, false);
+    if (gps_queue) close_shared_queue(gps_queue, GPS_SHM, false);
     return 0;
 }
