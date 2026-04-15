@@ -75,32 +75,47 @@ DisplayConfig load_display_config(const std::string &path) {
   if (j.is_null())
     return result;
 
+  if (!j.contains("screens") || !j["screens"].is_array())
+    return result;
+
   for (const auto &screen : j["screens"]) {
     ScreenConfig scr;
-    scr.name = screen["name"];
+    scr.name = screen.value("name", std::string(""));
+
+    if (!screen.contains("widgets") || !screen["widgets"].is_array()) {
+      result.screens.emplace_back(scr);
+      continue;
+    }
 
     for (const auto &w : screen["widgets"]) {
       WidgetConfig cfg;
-      cfg.type = parse_widget_type(w["type"].get<std::string>());
-      cfg.alarm = w["alarm"];
+      cfg.type = parse_widget_type(w.value("type", std::string("number")));
+      cfg.alarm = w.value("alarm", false);
 
-      const auto &pos = w["position"];
-      cfg.position = {pos["x"], pos["y"], pos["width"], pos["height"]};
+      if (w.contains("position")) {
+        const auto &pos = w["position"];
+        cfg.position = {
+          pos.value("x", 0), pos.value("y", 0),
+          pos.value("width", 1), pos.value("height", 1)
+        };
+      }
 
-      const auto &d = w["data"];
-      cfg.data.can_id = parse_can_id(d["can_id"].get<std::string>());
-      cfg.data.can_id_label = d["can_id_label"];
-      cfg.data.signal = d["signal"];
-      cfg.data.unit = d["unit"].get<std::string>();
-      cfg.data.min = d["min"];
-      cfg.data.max = d["max"];
-      cfg.data.caution_threshold = d["caution_threshold"];
-      cfg.data.critical_threshold = d["critical_threshold"];
+      if (w.contains("data")) {
+        const auto &d = w["data"];
+        cfg.data.can_id = parse_can_id(d.value("can_id", std::string("0x0")));
+        cfg.data.can_id_label = d.value("can_id_label", std::string(""));
+        cfg.data.signal = d.value("signal", std::string(""));
+        cfg.data.unit = d.value("unit", std::string(""));
+        cfg.data.min = d.value("min", 0.0);
+        cfg.data.max = d.value("max", 100.0);
+        cfg.data.caution_threshold = d.value("caution_threshold", 0.0);
+        cfg.data.critical_threshold = d.value("critical_threshold", 0.0);
+      }
 
-      if (cfg.type == WidgetType::Graph) {
+      if (cfg.type == WidgetType::Graph && w.contains("graph")) {
         const auto &g = w["graph"];
         GraphConfig gc;
-        gc.mode = parse_graph_mode(g["mode"].get<std::string>());
+        gc.mode = parse_graph_mode(g.value("mode", std::string("time_series")));
 
         gc.max_points = g.value("max_points", 1000u);
         if (gc.max_points < 1)
@@ -111,7 +126,7 @@ DisplayConfig load_display_config(const std::string &path) {
           if (gc.window_seconds <= 0.0f)
             gc.window_seconds = 1.0f;
         } else {
-          gc.x_can_id = parse_can_id(g["x_can_id"].get<std::string>());
+          gc.x_can_id = parse_can_id(g.value("x_can_id", std::string("0x0")));
           gc.x_signal = g.value("x_signal", std::string(""));
           gc.x_unit = g.value("x_unit", std::string(""));
           gc.x_min = g.value("x_min", 0.0);

@@ -100,14 +100,14 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
         g.yMax = (float)wc.data.max;
         g.yUnits = wc.data.unit;
 
-        const auto &gc = wc.graph.value();
+        GraphConfig gc = wc.graph.value_or(GraphConfig{});
         g.mode = gc.mode;
-        g.max_points = gc.max_points;
+        g.max_points = gc.max_points > 0 ? gc.max_points : 1000;
 
         if (gc.mode == GraphMode::TimeSeries) {
-          g.window_seconds = gc.window_seconds;
+          g.window_seconds = gc.window_seconds > 0.0f ? gc.window_seconds : 30.0f;
           g.xMin = 0.0f;
-          g.xMax = gc.window_seconds;
+          g.xMax = g.window_seconds;
           g.xUnits = "s";
         } else {
           g.xMin = (float)gc.x_min;
