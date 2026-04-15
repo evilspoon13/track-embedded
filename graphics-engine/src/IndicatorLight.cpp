@@ -43,4 +43,6 @@ void IndicatorLight::Draw(const Font &font) const {
 
   DrawCircleV(c, radius, fill);
   DrawCircleLines((int)c.x, (int)c.y, radius, Color{255, 255, 255, 80});
+
+  draw_alarm_overlay(lo, alarm && on);
 }

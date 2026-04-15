@@ -77,6 +77,8 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
         n.wTiles = wTiles;
         n.hTiles = hTiles;
         n.label = wc.data.can_id_label;
+        n.alarm = wc.alarm;
+        n.criticalThreshold = (float)wc.data.critical_threshold;
         lw.widget = n;
         break;
       }
@@ -87,6 +89,7 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
         ind.wTiles = wTiles;
         ind.hTiles = hTiles;
         ind.label = wc.data.can_id_label;
+        ind.alarm = wc.alarm;
         lw.widget = ind;
         break;
       }
@@ -116,6 +119,9 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
           lw.x_can_id = gc.x_can_id;
           lw.x_signal = gc.x_signal;
         }
+
+        g.alarm = wc.alarm;
+        g.criticalThreshold = (float)wc.data.critical_threshold;
 
         // series[0] must exist before push_y/push_xy are called.
         g.series.emplace_back(GraphSeries{});

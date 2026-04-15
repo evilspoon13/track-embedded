@@ -26,6 +26,9 @@ struct NumberWidget
     int value = 0;
     Color valueColor = GREEN;
 
+    bool  alarm = false;
+    float criticalThreshold = 0.0f;
+
     float scale = 1.0f;
 
     Color panelFill   = Color{0, 0, 0, 180};
@@ -47,6 +50,8 @@ struct IndicatorLight
 
     std::string label = "WARN";
     bool on = false;
+
+    bool alarm = false;
 
     float scale = 1.0f;
 
@@ -287,6 +292,10 @@ struct GraphWidget
 
     // Data
     std::vector<GraphSeries> series;
+
+    bool  alarm = false;
+    float criticalThreshold = 0.0f;
+    float latestY = 0.0f;
 
     // Graph mode and ring-buffer settings (set by WidgetFactory from config)
     GraphMode mode           = GraphMode::TimeSeries;

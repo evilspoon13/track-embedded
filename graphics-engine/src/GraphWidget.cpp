@@ -116,9 +116,12 @@ void GraphWidget::Draw(const Font &font) const {
         DrawCircleLines((int)p.x, (int)p.y, r, m.color);
     }
   }
+
+  draw_alarm_overlay(lo, alarm_active(alarm, latestY, criticalThreshold));
 }
 
 void GraphWidget::push_y(float t, float v) {
+    latestY = v;
     if (series.empty()) return;
     auto& pts = series[0].points;
     pts.push_back({t, v});
@@ -138,6 +141,7 @@ void GraphWidget::push_y(float t, float v) {
 }
 
 void GraphWidget::push_xy(float x, float y) {
+    latestY = y;
     if (series.empty()) return;
     auto& pts = series[0].points;
     pts.push_back({x, y});

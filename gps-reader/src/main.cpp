@@ -57,9 +57,9 @@ int main() {
         int n = sp.read_line(line, sizeof(line));
         if (n <= 0) continue;
 
-        std::printf("RAW[%d]: %s", n, line);
-        if (line[n > 0 ? n - 1 : 0] != '\n') std::printf("\n");
-        std::fflush(stdout);
+        //std::printf("RAW[%d]: %s", n, line);
+        //if (line[n > 0 ? n - 1 : 0] != '\n') std::printf("\n");
+        //std::fflush(stdout);
 
         if (parse_nmea(line, current)) {
             queue->push(current);

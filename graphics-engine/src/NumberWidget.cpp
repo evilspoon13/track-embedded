@@ -36,4 +36,6 @@ void NumberWidget::Draw(const Font &font) const {
   float valueY = contentTop + (contentH - valueSz.y) * 0.5f;
   DrawTextEx(font, vstr, Vector2{valueX, valueY}, valueSizeS, spacingS,
              valueColor);
+
+  draw_alarm_overlay(lo, alarm_active(alarm, (float)value, criticalThreshold));
 }
