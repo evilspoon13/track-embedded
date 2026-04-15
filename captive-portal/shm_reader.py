@@ -3,8 +3,8 @@ import os
 import struct
 
 # -- Telemetry queue (CAN signals) --
-TEL_MSG_SIZE = 80
-TEL_MSG_FMT = "<I64s4xd"  # uint32, char[64], 4-byte pad, double
+TEL_MSG_SIZE = 88
+TEL_MSG_FMT = "<I64s4xdq"  # uint32, char[64], 4-byte pad, double, int64 t_capture_ns
 TEL_BUFFER_COUNT = 4096
 TEL_WRITE_IDX_OFFSET = TEL_MSG_SIZE * TEL_BUFFER_COUNT
 TEL_SHM_SIZE = TEL_WRITE_IDX_OFFSET + 8
@@ -38,7 +38,7 @@ class TelemetryReader:
         while pos < head:
             idx = pos & (TEL_BUFFER_COUNT - 1)
             offset = idx * TEL_MSG_SIZE
-            can_id, name_bytes, value = struct.unpack_from(TEL_MSG_FMT, self._buf, offset)
+            can_id, name_bytes, value, _t_ns = struct.unpack_from(TEL_MSG_FMT, self._buf, offset)
             name = name_bytes.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
             signals[f"{can_id}:{name}"] = value
             pos += 1

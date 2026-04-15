@@ -17,6 +17,7 @@ struct TelemetryMessage {
     uint32_t can_id;
     char signal_name[64];
     double value;
+    int64_t t_capture_ns; // steady_clock ns when can-reader received the frame
 };
 using TelemetryQueue = BroadcastQueue<TelemetryMessage, 4096>;
 inline constexpr const char* TELEMETRY_SHM = "/track_telemetry";

@@ -81,6 +81,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (got_frame) {
+            int64_t capture_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
             printf("Received CAN frame with ID: %03x\n", frame.can_id);
             auto it = frame_map.find(frame.can_id);
             if (it == frame_map.end()) {
@@ -95,6 +97,7 @@ int main(int argc, char* argv[]) {
                 std::strncpy(msg.signal_name, cfg.name.c_str(), sizeof(msg.signal_name) - 1);
                 msg.signal_name[sizeof(msg.signal_name) - 1] = '\0';
                 msg.value = parse_value(frame, cfg);
+                msg.t_capture_ns = capture_ns;
                 queue->push(msg);
                 printf("Parsed signal '%s' for CAN ID %03x: %f\n", msg.signal_name, frame.can_id, msg.value);
             }
