@@ -59,6 +59,8 @@ int main() {
 
         if (parse_nmea(line, current)) {
             queue->push(current);
+            std::printf("GPS: fix=%d lat=%.6f lon=%.6f speed=%.2f kmh heading=%.1f ts=%lld\n", current.has_fix, current.latitude, current.longitude, current.speed_kmh, current.heading, (long long)current.timestamp_ms);
+            std::fflush(stdout);
         }
 
         if (reload_flag) {
