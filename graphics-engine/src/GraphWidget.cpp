@@ -99,18 +99,13 @@ void GraphWidget::Draw(const Font &font) const {
         {0.0f, 0.0f}, -90.0f, axisFs, spacingS, textColor);
   }
 
-  Color lineColor = thresholdCount > 0
-                      ? ColorForValue(latestY, thresholds, thresholdCount)
-                      : GREEN;
-
   for (const auto &s : series) {
     if (!s.visible || s.points.size() < 2)
       continue;
-    Color drawColor = thresholdCount > 0 ? lineColor : s.color;
     for (size_t i = 1; i < s.points.size(); i++) {
       DrawLineEx(ToScreen(s.points[i - 1].x, s.points[i - 1].y),
                  ToScreen(s.points[i].x, s.points[i].y), s.thickness * scale,
-                 drawColor);
+                 RAYWHITE);
     }
     for (const auto &m : s.markers) {
       Vector2 p = ToScreen(m.x, m.y);
