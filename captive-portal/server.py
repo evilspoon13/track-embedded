@@ -433,6 +433,7 @@ def api_update_dbc():
     if not atomic_write(DBC_PATH, raw):
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
+    send_sigusr2("track-cloud-bridge.service")
     return jsonify({"msg": "Wrote DBC"})
 
 
@@ -452,6 +453,7 @@ def api_upload_dbc():
     if not atomic_write(DBC_PATH, raw):
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
+    send_sigusr2("track-cloud-bridge.service")
     return jsonify(config)
 
 
