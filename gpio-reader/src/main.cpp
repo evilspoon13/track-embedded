@@ -19,12 +19,15 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "status_shm.hpp"
 
-// buttons (BCM line numbers — physical pins 11, 13)
+// buttons (BCM line numbers — physical pins 11, 13, 10)
 static constexpr unsigned int GPIO_PIN_SCREEN_MOVE = 17;
 static constexpr unsigned int GPIO_PIN_LOG_TOGGLE  = 27;
+static constexpr unsigned int GPIO_PIN_WIFI_TOGGLE = 15;
 
 // leds (BCM line numbers — physical pins 16, 18, 29)
 static constexpr unsigned int GPIO_LED_GREEN = 23; // data logger recording
@@ -62,6 +65,24 @@ static void signal_process(const char* pidfile, const char* name) {
     }
 }
 
+static void toggle_wifi_mode() {
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("gpio: fork failed");
+        return;
+    }
+    if (pid == 0) {
+        execl("/bin/sh", "sh", "-c",
+              "systemctl is-active --quiet hostapd "
+              "&& /opt/track/scripts/wifi-mode.sh "
+              "|| /opt/track/scripts/ap-mode.sh",
+              nullptr);
+        perror("gpio: execl failed");
+        _exit(127);
+    }
+    printf("gpio: launched wifi/ap toggle (pid %d)\n", pid);
+}
+
 static void set_led(gpiod_line_request* req, unsigned int pin, bool on) {
     gpiod_line_request_set_value(req, pin, on ? GPIOD_LINE_VALUE_ACTIVE : GPIOD_LINE_VALUE_INACTIVE);
 }
@@ -71,6 +92,11 @@ int main() {
     sa.sa_handler = signal_handler;
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
+
+    // auto-reap children so toggle_wifi_mode() doesn't leave zombies
+    struct sigaction chld{};
+    chld.sa_handler = SIG_IGN;
+    sigaction(SIGCHLD, &chld, nullptr);
 
     gpiod_chip* chip = gpiod_chip_open("/dev/gpiochip0");
     if (!chip) {
@@ -92,9 +118,9 @@ int main() {
     gpiod_line_settings_set_output_value(out_settings, GPIOD_LINE_VALUE_INACTIVE);
 
     gpiod_line_config* config = gpiod_line_config_new();
-    unsigned int in_offsets[]  = { GPIO_PIN_SCREEN_MOVE, GPIO_PIN_LOG_TOGGLE };
+    unsigned int in_offsets[]  = { GPIO_PIN_SCREEN_MOVE, GPIO_PIN_LOG_TOGGLE, GPIO_PIN_WIFI_TOGGLE };
     unsigned int out_offsets[] = { GPIO_LED_GREEN, GPIO_LED_BLUE, GPIO_LED_RED };
-    gpiod_line_config_add_line_settings(config, in_offsets, 2, in_settings);
+    gpiod_line_config_add_line_settings(config, in_offsets, 3, in_settings);
     gpiod_line_config_add_line_settings(config, out_offsets, 3, out_settings);
 
     gpiod_line_request* request = gpiod_chip_request_lines(chip, nullptr, config);
@@ -148,6 +174,9 @@ int main() {
                 }
                 else if (pin == GPIO_PIN_LOG_TOGGLE) {
                     signal_process(PIDFILE_LOGGER, "data-logger");
+                }
+                else if (pin == GPIO_PIN_WIFI_TOGGLE) {
+                    toggle_wifi_mode();
                 }
             }
         }

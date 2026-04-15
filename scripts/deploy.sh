@@ -10,6 +10,7 @@ echo "=== Deploying T.R.A.C.K. to /opt/track/ ==="
 sudo mkdir -p /opt/track/config
 sudo mkdir -p /opt/track/captive-portal
 sudo mkdir -p /opt/track/graphics-engine/assets
+sudo mkdir -p /opt/track/scripts
 
 # copy binaries
 echo "Copying binaries..."
@@ -61,6 +62,13 @@ fi
 echo "Installing captive portal dependencies..."
 sudo /opt/track/captive-portal/venv/bin/pip install --upgrade pip
 sudo /opt/track/captive-portal/venv/bin/pip install -r /opt/track/captive-portal/requirements.txt
+
+# copy operator scripts (invoked by gpio-reader, etc.)
+echo "Copying scripts..."
+for s in wifi-mode.sh ap-mode.sh; do
+    sudo cp "$SCRIPT_DIR/$s" "/opt/track/scripts/$s"
+    sudo chmod +x "/opt/track/scripts/$s"
+done
 
 # install and enable systemd services
 echo "Installing systemd services..."
