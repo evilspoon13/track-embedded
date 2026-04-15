@@ -17,6 +17,12 @@
 // Base grid tile (your screen is divisible into these)
 static constexpr float BASE_TILE = 80.0f;
 
+struct GaugeThreshold
+{
+    float value = 0.0f;   // threshold upper bound
+    Color color = GREEN;  // used when widget.value <= value
+};
+
 struct NumberWidget
 {
     int gx = 0, gy = 0;
@@ -25,6 +31,9 @@ struct NumberWidget
     std::string label = "VALUE";
     int value = 0;
     Color valueColor = GREEN;
+
+    GaugeThreshold thresholds[8];
+    int thresholdCount = 0;
 
     bool  alarm = false;
     float criticalThreshold = 0.0f;
@@ -67,12 +76,6 @@ struct IndicatorLight
     float border = 2.0f;
 
     void Draw(const Font& font) const;
-};
-
-struct GaugeThreshold
-{
-    float value = 0.0f;   // threshold upper bound
-    Color color = GREEN;  // used when widget.value <= value
 };
 
 struct GaugeWidget
@@ -292,6 +295,9 @@ struct GraphWidget
 
     // Data
     std::vector<GraphSeries> series;
+
+    GaugeThreshold thresholds[8];
+    int thresholdCount = 0;
 
     bool  alarm = false;
     float criticalThreshold = 0.0f;

@@ -77,6 +77,7 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
         n.wTiles = wTiles;
         n.hTiles = hTiles;
         n.label = wc.data.can_id_label;
+        fill_thresholds(n.thresholds, n.thresholdCount, wc.data);
         n.alarm = wc.alarm;
         n.criticalThreshold = (float)wc.data.critical_threshold;
         lw.widget = n;
@@ -120,6 +121,7 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
           lw.x_signal = gc.x_signal;
         }
 
+        fill_thresholds(g.thresholds, g.thresholdCount, wc.data);
         g.alarm = wc.alarm;
         g.criticalThreshold = (float)wc.data.critical_threshold;
 
