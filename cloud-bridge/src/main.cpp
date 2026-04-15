@@ -55,7 +55,7 @@ static bool try_send_graphics_upload(WsClient& ws, const std::string& device_id,
     nlohmann::json j;
     j["type"] = "graphics_upload";
     j["device_id"] = device_id;
-    j["content"] = std::move(content);
+    j["payload"] = std::move(content);
 
     if (!ws.send(j.dump())) return false;
     return true;
