@@ -22,14 +22,14 @@
 
 #include "status_shm.hpp"
 
-// buttons
-static constexpr unsigned int GPIO_PIN_SCREEN_MOVE = 11;
-static constexpr unsigned int GPIO_PIN_LOG_TOGGLE  = 13;
+// buttons (BCM line numbers — physical pins 11, 13)
+static constexpr unsigned int GPIO_PIN_SCREEN_MOVE = 17;
+static constexpr unsigned int GPIO_PIN_LOG_TOGGLE  = 27;
 
-// leds
-static constexpr unsigned int GPIO_LED_GREEN = 16; // data logger recording
-static constexpr unsigned int GPIO_LED_BLUE  = 18; // cloud ws connected
-static constexpr unsigned int GPIO_LED_RED   = 29; // can bus healthy -- red on fault
+// leds (BCM line numbers — physical pins 16, 18, 29)
+static constexpr unsigned int GPIO_LED_GREEN = 23; // data logger recording
+static constexpr unsigned int GPIO_LED_BLUE  = 24; // cloud ws connected
+static constexpr unsigned int GPIO_LED_RED   = 5;  // can bus healthy -- red on fault
 
 static constexpr int64_t DEBOUNCE_NS      = 150'000'000; // 150ms
 static constexpr int64_t POLL_INTERVAL_NS = 100'000'000; // 100ms LED refresh
