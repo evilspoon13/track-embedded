@@ -13,6 +13,7 @@
 #include <linux/can/raw.h>
 #include <cstring>
 #include <unistd.h>
+#include <sys/time.h>
 
 bool CanSocket::open(const std::string& interface) {
     fd_ = socket(PF_CAN, SOCK_RAW, CAN_RAW);
@@ -42,6 +43,18 @@ bool CanSocket::read(can_frame& frame) {
 
     int nbytes = ::read(fd_, &frame, sizeof(struct can_frame));
     return nbytes == sizeof(frame);
+}
+
+bool CanSocket::write(const can_frame& frame) {
+    int nbytes = ::write(fd_, &frame, sizeof(frame));
+    return nbytes == sizeof(frame);
+}
+
+bool CanSocket::set_read_timeout(int ms) {
+    struct timeval tv{};
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+    return setsockopt(fd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == 0;
 }
 
 void CanSocket::close() {

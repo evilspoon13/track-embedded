@@ -8,8 +8,7 @@
 
 #include <csignal>
 #include <cstdio>
-
-#include <chrono>
+#include <cstring>
 
 #include "telemetry_queue.hpp"
 #include "dbc_parser.hpp"
@@ -17,6 +16,7 @@
 #include "status_shm.hpp"
 #include "can_socket.hpp"
 #include "frame_parser.hpp"
+#include "delay_probe.hpp"
 
 static volatile sig_atomic_t running = 1;
 static volatile sig_atomic_t reload_flag = 0;
@@ -33,7 +33,6 @@ int main(int argc, char* argv[]) {
     sa.sa_handler = signal_handler;
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
-    sa.sa_handler = signal_handler;
     sigaction(SIGHUP, &sa, nullptr);
 
     FrameMap frame_map = load_dbc_config(DEFAULT_DBC_PATH);
@@ -55,32 +54,32 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // 100ms read timeout so we can periodically send delay probes
+    sock.set_read_timeout(100);
+
     TrackStatus* status = open_status_shm();
     if (status)
         status->can_healthy.store(0, std::memory_order_relaxed);
 
-    // WILL BE REPLACED WITH RADUS ONE WAY DELAY CALC
-    using clock = std::chrono::steady_clock;
-    auto last_frame = clock::now();
-    bool healthy_reported = false;
-    constexpr auto health_timeout = std::chrono::milliseconds(1000);
+    DelayProbe delay_probe;
+    int healthy_reported = -1;
 
     can_frame frame;
     while(running) {
+        delay_probe.tick(sock);
+
         bool got_frame = sock.read(frame);
-        auto now = clock::now();
 
-        if (got_frame)
-            last_frame = now;
-
-        const bool healthy = (now - last_frame) < health_timeout;
-        
-        if (status && healthy != healthy_reported) {
-            status->can_healthy.store(healthy ? 1 : 0, std::memory_order_relaxed);
-            healthy_reported = healthy;
+        const int healthy_i = delay_probe.healthy() ? 1 : 0;
+        if (status && healthy_i != healthy_reported) {
+            status->can_healthy.store(uint8_t(healthy_i), std::memory_order_relaxed);
+            healthy_reported = healthy_i;
         }
 
         if (got_frame) {
+            if (delay_probe.handle_frame(frame)) {
+                continue;
+            }
 
             printf("Received CAN frame with ID: %03x\n", frame.can_id);
             auto it = frame_map.find(frame.can_id);
@@ -91,7 +90,6 @@ int main(int argc, char* argv[]) {
             const auto& channels = it->second;
 
             for (const auto& cfg : channels) {
-                // build telemetry message
                 TelemetryMessage msg;
                 msg.can_id = frame.can_id;
                 std::strncpy(msg.signal_name, cfg.name.c_str(), sizeof(msg.signal_name) - 1);

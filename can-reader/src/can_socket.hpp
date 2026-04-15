@@ -31,6 +31,10 @@ public:
 
     bool read(can_frame& frame);
 
+    bool write(const can_frame& frame);
+
+    bool set_read_timeout(int ms);
+
     void close();
 
 private:
