@@ -20,6 +20,7 @@
 #include "device_sync.hpp"
 #include "log_uploader.hpp"
 #include "shared_memory.hpp"
+#include "status_shm.hpp"
 #include "telemetry_queue.hpp"
 #include "time_util.hpp"
 #include "ws_client.hpp"
