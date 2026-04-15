@@ -122,8 +122,17 @@ void GraphWidget::push_y(float t, float v) {
     if (series.empty()) return;
     auto& pts = series[0].points;
     pts.push_back({t, v});
-    if (pts.size() > max_points)
+
+    // Drop points older than the scrolling window — this is what keeps the
+    // data within [xMin, xMax] so lines never render outside the axis bounds.
+    float cutoff = t - window_seconds;
+    while (!pts.empty() && pts.front().x < cutoff)
         pts.erase(pts.begin());
+
+    // Safety cap: prevent unbounded growth at very high CAN data rates.
+    while (pts.size() > max_points)
+        pts.erase(pts.begin());
+
     xMin = t - window_seconds;
     xMax = t;
 }
