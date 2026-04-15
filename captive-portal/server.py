@@ -72,6 +72,16 @@ def send_sighup(service_name):
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
+    
+def send_sigusr1(service_name):
+    try:
+        result = subprocess.run(
+            ["systemctl", "kill", "-s", "SIGUSR1", service_name],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
 
 
 def atomic_write(path, content):
@@ -155,6 +165,7 @@ def write_graphics_config(config):
     if not atomic_write(GRAPHICS_PATH, json.dumps(config, indent=2)):
         return False
     send_sighup("track-graphics.service")
+    send_sigusr1("track-cloud-bridge.service") # trigger send to cloud
     return True
 
 
