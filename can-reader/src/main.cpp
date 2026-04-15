@@ -10,13 +10,14 @@
 #include <cstdio>
 #include <cstring>
 
+#include <chrono>
+
 #include "telemetry_queue.hpp"
 #include "dbc_parser.hpp"
 #include "shared_memory.hpp"
 #include "status_shm.hpp"
 #include "can_socket.hpp"
 #include "frame_parser.hpp"
-#include "delay_probe.hpp"
 
 static volatile sig_atomic_t running = 1;
 static volatile sig_atomic_t reload_flag = 0;
@@ -54,33 +55,32 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // 100ms read timeout so we can periodically send delay probes
+    // 100ms read timeout so the health check can age out
     sock.set_read_timeout(100);
 
     TrackStatus* status = open_status_shm();
     if (status)
         status->can_healthy.store(0, std::memory_order_relaxed);
 
-    DelayProbe delay_probe;
+    using clock = std::chrono::steady_clock;
+    constexpr auto HEALTH_TIMEOUT = std::chrono::milliseconds(1000);
+    auto last_frame = clock::now();
     int healthy_reported = -1;
 
     can_frame frame;
     while(running) {
-        delay_probe.tick(sock);
-
         bool got_frame = sock.read(frame);
+        auto now = clock::now();
 
-        const int healthy_i = delay_probe.healthy() ? 1 : 0;
+        if (got_frame) last_frame = now;
+
+        const int healthy_i = (now - last_frame) < HEALTH_TIMEOUT ? 1 : 0;
         if (status && healthy_i != healthy_reported) {
             status->can_healthy.store(uint8_t(healthy_i), std::memory_order_relaxed);
             healthy_reported = healthy_i;
         }
 
         if (got_frame) {
-            if (delay_probe.handle_frame(frame)) {
-                continue;
-            }
-
             printf("Received CAN frame with ID: %03x\n", frame.can_id);
             auto it = frame_map.find(frame.can_id);
             if (it == frame_map.end()) {
