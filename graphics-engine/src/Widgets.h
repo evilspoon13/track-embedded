@@ -59,8 +59,13 @@ struct IndicatorLight
 
     std::string label = "WARN";
     bool on = false;
+    float value = 0.0f;
+
+    GaugeThreshold thresholds[8];
+    int thresholdCount = 0;
 
     bool alarm = false;
+    float criticalThreshold = 0.0f;
 
     float scale = 1.0f;
 

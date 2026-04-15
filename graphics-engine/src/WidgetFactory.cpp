@@ -90,7 +90,9 @@ std::vector<LiveScreen> build_screens(const DisplayConfig &config) {
         ind.wTiles = wTiles;
         ind.hTiles = hTiles;
         ind.label = wc.data.can_id_label;
+        fill_thresholds(ind.thresholds, ind.thresholdCount, wc.data);
         ind.alarm = wc.alarm;
+        ind.criticalThreshold = (float)wc.data.critical_threshold;
         lw.widget = ind;
         break;
       }
@@ -149,6 +151,7 @@ void LiveWidget::set_value(double v) {
         if constexpr (std::is_same_v<T, NumberWidget>) {
           w.value = static_cast<int>(v);
         } else if constexpr (std::is_same_v<T, IndicatorLight>) {
+          w.value = static_cast<float>(v);
           w.on = (v != 0.0);
         } else if constexpr (std::is_same_v<T, GraphWidget>) {
           if (w.mode == GraphMode::TimeSeries) {

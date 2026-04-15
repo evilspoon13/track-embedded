@@ -37,12 +37,12 @@ void IndicatorLight::Draw(const Font &font) const {
   if (radius < 1.0f)
     radius = 1.0f;
 
-  Color fill = on ? onColor : offColor;
-  if (!on)
-    fill.a = 120;
+  Color fill = thresholdCount > 0
+                 ? ColorForValue(value, thresholds, thresholdCount)
+                 : (on ? onColor : offColor);
 
   DrawCircleV(c, radius, fill);
   DrawCircleLines((int)c.x, (int)c.y, radius, Color{255, 255, 255, 80});
 
-  draw_alarm_overlay(lo, alarm && on);
+  draw_alarm_overlay(lo, alarm_active(alarm, value, criticalThreshold));
 }
