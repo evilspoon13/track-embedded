@@ -570,7 +570,7 @@ def telemetry_ws(ws):
                     ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
             if gps:
                 gps_data, gps_pos = gps.consume(gps_pos)
-                if gps_data and gps_data.get("has_fix"):
+                if gps_data:
                     ws.send(json.dumps({
                         "type": "gps",
                         "payload": {
