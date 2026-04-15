@@ -6,6 +6,8 @@ Requires=track-setup.service
 [Service]
 Type=simple
 EnvironmentFile=-/opt/track/config/track.env
+Environment=GPS_DEVICE=/dev/ttyAMA0
+Environment=GPS_BAUD=38400
 ExecStart=/opt/track/gps-reader
 Restart=on-failure
 RestartSec=1
