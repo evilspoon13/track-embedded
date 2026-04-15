@@ -29,8 +29,6 @@ DBC_PATH = CONFIG_DIR / "display.dbc"
 DEVICE_PATH = CONFIG_DIR / "device.json"
 UI_DIR = Path(__file__).resolve().parent / "ui"  # vite build output
 LOG_DIR = Path("/tmp/track-logs")
-SYNC_STATE_PATH = Path("/opt/track/state/sync_state.json")
-SYNC_DBC_STATE_PATH = Path("/opt/track/state/sync_state_display_dbc.json")
 LOG_ENTRY_SIZE = 24
 DEFAULT_LOG_LIMIT = 100
 MAX_LOG_LIMIT = 500
@@ -69,6 +67,16 @@ def send_sighup(service_name):
     try:
         result = subprocess.run(
             ["systemctl", "kill", "-s", "SIGHUP", service_name],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+    
+def send_sigusr1(service_name):
+    try:
+        result = subprocess.run(
+            ["systemctl", "kill", "-s", "SIGUSR1", service_name],
             capture_output=True, text=True, timeout=5,
         )
         return result.returncode == 0
@@ -157,57 +165,8 @@ def write_graphics_config(config):
     if not atomic_write(GRAPHICS_PATH, json.dumps(config, indent=2)):
         return False
     send_sighup("track-graphics.service")
-    mark_graphics_pending_sync()
-    send_sighup("track-cloud-bridge.service")
+    send_sigusr1("track-cloud-bridge.service") # trigger send to cloud
     return True
-
-
-def mark_graphics_pending_sync():
-    try:
-        state = {}
-        if SYNC_STATE_PATH.exists():
-            try:
-                state = json.loads(SYNC_STATE_PATH.read_text())
-            except json.JSONDecodeError:
-                state = {}
-
-        version_id = state.get("version_id", 0)
-        if not isinstance(version_id, int):
-            version_id = 0
-
-        state["pending_upload"] = True
-        state["pending_base_version_id"] = version_id
-        state["pending_change_id"] = secrets.token_hex(16)
-
-        SYNC_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write(SYNC_STATE_PATH, json.dumps(state, indent=2))
-        return True
-    except OSError:
-        return False
-
-
-def mark_dbc_pending_sync():
-    try:
-        state = {}
-        if SYNC_DBC_STATE_PATH.exists():
-            try:
-                state = json.loads(SYNC_DBC_STATE_PATH.read_text())
-            except json.JSONDecodeError:
-                state = {}
-
-        version_id = state.get("version_id", 0)
-        if not isinstance(version_id, int):
-            version_id = 0
-
-        state["pending_upload"] = True
-        state["pending_base_version_id"] = version_id
-        state["pending_change_id"] = secrets.token_hex(16)
-
-        SYNC_DBC_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write(SYNC_DBC_STATE_PATH, json.dumps(state, indent=2))
-        return True
-    except OSError:
-        return False
 
 
 # -- DBC helpers --
@@ -457,8 +416,6 @@ def api_update_dbc():
     if not atomic_write(DBC_PATH, raw):
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
-    mark_dbc_pending_sync()
-    send_sighup("track-cloud-bridge.service")
     return jsonify({"msg": "Wrote DBC"})
 
 
@@ -478,8 +435,6 @@ def api_upload_dbc():
     if not atomic_write(DBC_PATH, raw):
         return jsonify({"msg": "Failed to write DBC"}), 500
     send_sighup("track-can-reader.service")
-    mark_dbc_pending_sync()
-    send_sighup("track-cloud-bridge.service")
     return jsonify(config)
 
 
