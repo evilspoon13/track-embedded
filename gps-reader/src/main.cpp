@@ -57,6 +57,10 @@ int main() {
         int n = sp.read_line(line, sizeof(line));
         if (n <= 0) continue;
 
+        std::printf("RAW[%d]: %s", n, line);
+        if (line[n > 0 ? n - 1 : 0] != '\n') std::printf("\n");
+        std::fflush(stdout);
+
         if (parse_nmea(line, current)) {
             queue->push(current);
             std::printf("GPS: fix=%d lat=%.6f lon=%.6f speed=%.2f kmh heading=%.1f ts=%lld\n", current.has_fix, current.latitude, current.longitude, current.speed_kmh, current.heading, (long long)current.timestamp_ms);
