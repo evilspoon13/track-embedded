@@ -511,6 +511,30 @@ def api_get_log_days():
     return jsonify({"days": days})
 
 
+# -- GPS snapshot --
+
+@app.route("/api/gps", methods=["GET"])
+def api_get_gps():
+    gps = get_gps_reader()
+    if not gps:
+        return jsonify({"available": False}), 503
+    pos = gps.current_pos()
+    start = max(0, pos - 1)
+    data, _ = gps.consume(start)
+    if not data:
+        return jsonify({"available": True, "has_fix": False})
+    return jsonify({
+        "available": True,
+        "has_fix": bool(data.get("has_fix")),
+        "lat": data["latitude"],
+        "lon": data["longitude"],
+        "speed_kmh": data["speed_kmh"],
+        "heading": data["heading"],
+        "gps_ts": data["timestamp_ms"],
+        "ts": int(time.time() * 1000),
+    })
+
+
 # -- live telemetry WebSocket --
 
 _tel_reader = None
@@ -546,8 +570,18 @@ def telemetry_ws(ws):
                     ws.send(json.dumps({"type": "Telemetry", "payload": {"signals": signals}}))
             if gps:
                 gps_data, gps_pos = gps.consume(gps_pos)
-                if gps_data:
-                    ws.send(json.dumps({"type": "GPS", "payload": gps_data}))
+                if gps_data and gps_data.get("has_fix"):
+                    ws.send(json.dumps({
+                        "type": "gps",
+                        "payload": {
+                            "lat": gps_data["latitude"],
+                            "lon": gps_data["longitude"],
+                            "speed_kmh": gps_data["speed_kmh"],
+                            "heading": gps_data["heading"],
+                            "ts": int(time.time() * 1000),
+                            "gps_ts": gps_data["timestamp_ms"],
+                        },
+                    }))
             time.sleep(0.05)
     except Exception:
         return
