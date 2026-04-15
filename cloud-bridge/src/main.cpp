@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
@@ -29,10 +30,12 @@
 static volatile sig_atomic_t running = 1;
 static volatile sig_atomic_t reload_flag = 0;
 static volatile sig_atomic_t graphics_changed = 0;
+static volatile sig_atomic_t dbc_changed = 0;
 
 static void signal_handler(int) { running = 0; }
 static void sighup_handler(int) { reload_flag = 1; }
 static void sigusr1_handler(int) { graphics_changed = 1; }
+static void sigusr2_handler(int) { dbc_changed = 1; }
 
 static std::string get_env(const char *name, const char *fallback) {
     const char *val = std::getenv(name);
@@ -55,7 +58,24 @@ static bool try_send_graphics_upload(WsClient& ws, const std::string& device_id,
     nlohmann::json j;
     j["type"] = "graphics_upload";
     j["device_id"] = device_id;
-    j["content"] = std::move(content);
+    j["payload"] = std::move(content);
+
+    if (!ws.send(j.dump())) return false;
+    return true;
+}
+
+static bool try_send_dbc_upload(WsClient& ws, const std::string& device_id, const char* dbc_path) {
+    std::ifstream f(dbc_path, std::ios::binary);
+    if (!f.is_open()) {
+        std::printf("[dbc_upload] failed to read %s\n", dbc_path);
+        return false;
+    }
+    std::string raw((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+    nlohmann::json j;
+    j["type"] = "dbc_upload";
+    j["device_id"] = device_id;
+    j["payload"] = std::move(raw);
 
     if (!ws.send(j.dump())) return false;
     return true;
@@ -74,6 +94,10 @@ int main() {
     struct sigaction sa_usr1{};
     sa_usr1.sa_handler = sigusr1_handler;
     sigaction(SIGUSR1, &sa_usr1, nullptr);
+
+    struct sigaction sa_usr2{};
+    sa_usr2.sa_handler = sigusr2_handler;
+    sigaction(SIGUSR2, &sa_usr2, nullptr);
 
     std::string ws_url = get_env("CB_URL", "wss://track-web.fly.dev/ws/pi");
     std::string api_url = get_env("CB_API_URL", "https://track-web.fly.dev");
@@ -131,6 +155,13 @@ int main() {
         if (ws.is_connected()) {
             if (try_send_graphics_upload(ws, device_sync.device_id(), "/opt/track/config/graphics.json")) {
                 graphics_changed = 0;
+            }
+        }
+    }
+    if (dbc_changed) {
+        if (ws.is_connected()) {
+            if (try_send_dbc_upload(ws, device_sync.device_id(), "/opt/track/config/display.dbc")) {
+                dbc_changed = 0;
             }
         }
     }

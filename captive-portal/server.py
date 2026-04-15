@@ -82,6 +82,17 @@ def send_sigusr1(service_name):
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
+    
+def send_sigusr2(service_name):
+    try:
+        result = subprocess.run(
+            ["systemctl", "kill", "-s", "SIGUSR2", service_name],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
 
 
 def atomic_write(path, content):
