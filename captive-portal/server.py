@@ -328,6 +328,7 @@ def api_set_graphics():
     if not atomic_write(GRAPHICS_PATH, json.dumps(data, indent=2)):
         return jsonify({"ok": False, "error": "Failed to write config"}), 500
     send_sighup("track-graphics.service")
+    send_sigusr1("track-cloud-bridge.service")
     return jsonify({"ok": True})
 
 
