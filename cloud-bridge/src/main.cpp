@@ -158,6 +158,10 @@ int main() {
     printf("Cloud bridge started. ws=%s api=%s device=%s\n", ws_url.c_str(), api_url.c_str(), device_sync.device_id().c_str());
 
     while (running) {
+        if (status) {
+            status->cloud_ws_connected.store(ws.is_connected() ? 1 : 0, std::memory_order_relaxed);
+        }
+
         if (reload_flag) {
             reload_flag = 0;
             device_sync.reload();
