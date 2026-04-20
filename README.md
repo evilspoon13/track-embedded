@@ -13,8 +13,9 @@ The same React UI serves both the Pi (via Flask, no auth, local config files) an
 
 ```
 [CAN Bus] ─► [can-reader] ─► (shared memory) ─┬─► [graphics-engine] ─► HDMI Display
-                                                ├─► [data-logger] ─► SD Card
-                                                └─► [captive-portal] ─► Web UI
+[GPIO]    ─► [gpio-reader] ─►                 ├─► [data-logger] ─► SD Card
+[GPS]     ─► [gps-reader]  ─►                 ├─► [cloud-bridge] ─► Cloud (WSS /ws/pi)
+                                               └─► [captive-portal] ─► Web UI
 
 [User's phone/laptop]
       │
@@ -76,7 +77,7 @@ make clean && make PLATFORM=DRM
 
 # Redeploy and restart
 sudo ./scripts/deploy.sh
-sudo systemctl restart track-setup track-can-interface track-can-reader track-graphics track-logger track-cloud-bridge track-portal
+sudo systemctl restart track-setup track-can-interface track-can-reader track-gps-reader track-gpio track-graphics track-logger track-cloud-bridge track-portal
 ```
 
 ## Selecting The CAN Interface
@@ -121,6 +122,8 @@ sudo systemctl restart track-can-interface track-can-reader track-graphics track
 
 ```
 track-setup (tmpfs dirs)
+    ├─► track-gpio (GPIO inputs → shared memory, DRM builds)
+    ├─► track-gps-reader (NMEA → shared memory)
     └─► track-can-interface (set CAN bitrate)
             └─► track-can-reader (CAN → shared memory)
                     ├─► track-graphics (shared memory → display)

@@ -102,6 +102,12 @@ The "unit" field must be one of these exact strings:
     "temperature"   -- displayed as °C
     "pressure"      -- displayed as psi
     "rpm"           -- displayed as RPM
+    "voltage"       -- displayed as V
+    "current"       -- displayed as A
+    "speed"         -- displayed as km/h
+    "torque"        -- displayed as N·m
+    "power"         -- displayed as kW
+    "percent"       -- displayed as %
 
 Units are shown inside gauge and bar widgets. The number widget shows the raw
 integer value with no units. The indicator widget shows no value, just on/off.
